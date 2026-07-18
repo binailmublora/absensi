@@ -3,126 +3,390 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scanner Absensi Sekolah</title>
-  <!-- Menggunakan pustaka html5-qrcode standard -->
+  <title>Sistem Absensi Digital Sekolah</title>
+  <!-- Library Pindai QR Code Standar -->
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- Google Fonts untuk Tampilan Premium -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --text: #1e293b;
-      --primary: #3b82f6;
-      --success: #10b981;
-      --danger: #ef4444;
-      --border: #e2e8f0;
+      --primary: #0f5132;        /* Hijau Zamrud Khas Tahfidz */
+      --primary-light: #d1e7dd;  /* Hijau Muda Lembut */
+      --accent: #e5a93b;         /* Emas Hangat Premium */
+      --bg: #f4f7f5;             /* Abu-abu Hijau Sangat Terang */
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --white: #ffffff;
+      --success: #198754;
+      --danger: #dc3545;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; }
-    .container { width: 100%; max-width: 480px; }
-    h1 { font-size: 20px; text-align: center; margin-bottom: 20px; color: #0f172a; }
-    .card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); margin-bottom: 16px; border: 1px solid var(--border); overflow: hidden; }
-    #reader { width: 100%; border-radius: 12px; overflow: hidden; border: none !important; }
-    #status { padding: 12px; border-radius: 8px; font-size: 14px; text-align: center; font-weight: 500; margin-top: 12px; display: none; }
-    .msg-process { background: #e0f2fe; color: #0369a1; }
-    .msg-success { background: #dcfce7; color: #15803d; }
-    .msg-error { background: #fee2e2; color: #b91c1c; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
-    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-    th { color: #64748b; font-weight: 600; }
-    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; color: #fff; background: var(--success); }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 16px;
+    }
+
+    /* Header Aplikasi */
+    .header-app {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .logo-container {
+      width: 90px;
+      height: 90px;
+      background: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px auto;
+      box-shadow: 0 8px 16px rgba(15, 81, 50, 0.08);
+      border: 3px solid var(--accent);
+    }
+    .logo-container img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+    .header-app h1 {
+      font-size: 22px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .header-app p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Main Container (Layout Dua Tab Terpadu) */
+    .main-wrapper {
+      width: 100%;
+      max-width: 480px;
+      background: var(--white);
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(15, 81, 50, 0.06);
+      overflow: hidden;
+    }
+
+    /* Tab Switcher */
+    .tab-navigation {
+      display: flex;
+      background: #f8faf9;
+      border-bottom: 1px solid #edf2f0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      background: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      background: var(--white);
+      border-bottom: 3px solid var(--accent);
+    }
+
+    /* Konten Tab */
+    .tab-content {
+      padding: 24px;
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Area Kamera / Scanner */
+    #reader {
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px dashed var(--primary-light) !important;
+      background: #fafafa;
+    }
+    #status-scanner {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      text-align: center;
+      font-weight: 500;
+      display: none;
+    }
+    .status-loading { background: #e0f2fe; color: #0369a1; }
+    .status-success { background: var(--primary-light); color: var(--primary); }
+    .status-error { background: #fee2e2; color: #b91c1c; }
+
+    /* Form Login Multi-Role */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #dcdfdc;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15, 81, 50, 0.1);
+    }
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+    .btn-login:hover {
+      background: #0b3d26;
+    }
+
+    /* Tabel Riwayat Absen Ringkas */
+    .history-section {
+      margin-top: 20px;
+    }
+    .history-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: #f8faf8;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      border-left: 3px solid var(--accent);
+    }
+    .history-time {
+      font-weight: 600;
+      color: var(--primary);
+    }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>📷 Scan Absensi</h1>
-  
-  <div class="card">
-    <div id="reader"></div>
-    <div id="status"></div>
+  <!-- Header Sekolah -->
+  <div class="header-app">
+    <div class="logo-container">
+      <!-- File logo.png ditaruh di repositori GitHub yang sama -->
+      <img src="logo.jpg" alt="Logo Sekolah" onerror="this.src='https://via.placeholder.com/70/0f5132/ffffff?text=LOGO'">
+    </div>
+    <h1>E-Absensi & Portal Digital</h1>
+    <p>Silakan scan QR Code Anda atau masuk ke portal akademis</p>
   </div>
 
-  <div class="card">
-    <h3 style="margin: 0 0 8px 0; font-size: 15px;">Riwayat Scan Sesi Ini</h3>
-    <table>
-      <thead>
-        <tr><th>Jam</th><th>Nama</th><th>Tipe</th><th>Status</th></tr>
-      </thead>
-      <tbody id="historyBody">
-        <tr id="emptyRow"><td colspan="4" style="text-align:center; color:#94a3b8;">Belum ada data scan</td></tr>
-      </tbody>
-    </table>
+  <!-- Wrapper Utama -->
+  <div class="main-wrapper">
+    <!-- Menu Pindah Tab -->
+    <div class="tab-navigation">
+      <button class="tab-btn active" onclick="switchTab('scan-tab')">📷 Scan Masuk/Pulang</button>
+      <button class="tab-btn" onclick="switchTab('login-tab')">🔑 Portal Login</button>
+    </div>
+
+    <!-- TAB 1: AREA LANGSUNG SCAN -->
+    <div id="scan-tab" class="tab-content active">
+      <div id="reader"></div>
+      <div id="status-scanner"></div>
+
+      <!-- Riwayat Scan Singkat Sesi Ini -->
+      <div class="history-section">
+        <div class="history-title">Aktivitas Scan Terbaru</div>
+        <div id="history-list">
+          <p style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px;">Belum ada antrean absensi.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: PORTAL LOGIN MULTI-ROLE -->
+    <div id="login-tab" class="tab-content">
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="role">Hak Akses / Jabatan</label>
+          <select id="role" required>
+            <option value="Orang Tua">Orang Tua Murid</option>
+            <option value="Guru">Guru / Staf</option>
+            <option value="Kepala Sekolah">Kepala Sekolah</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="username">Nama Pengguna / NIP / NISN</label>
+          <input type="text" id="username" placeholder="Masukkan ID atau username" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Kata Sandi</label>
+          <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-login">Masuk ke Dashboard</button>
+      </form>
+      <div id="status-login" style="margin-top:12px; text-align:center; font-size:13px;"></div>
+    </div>
   </div>
-</div>
 
 <script>
-  // ⚠️ GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA SETELAH DEPLOY ULANG
-  const API_URL = "https://script.google.com/macros/s/XXXXX_ID_DEPLOYMENT_ANDA_XXXXX/exec"; 
+  // ⚠️ GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbytBeytQzUvS8sFN7ohrF9EVsI57OfVJpI_tVGhbN5DpeXB0OPtQ6GNzdPgTtAsdob4yw/exec"; 
   
   let html5QrcodeScanner;
-  let isScanning = true;
+  let canScan = true;
 
-  function onScanSuccess(decodedText) {
-    if (!isScanning) return;
-    isScanning = false; // Kunci scanner agar tidak memproses dobel data
+  // Fungsi Pindah Tab Antarmuka
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
 
-    showStatus("Memproses QR Code...", "msg-process");
+    // Jika pindah ke tab scan, pastikan kamera aktif
+    if (tabId === 'scan-tab') {
+      startCamera();
+    } else {
+      // Matikan kamera sementara jika pindah ke tab login untuk menghemat baterai HP
+      if(html5QrcodeScanner) { try { html5QrcodeScanner.stop(); } catch(e){} }
+    }
+  }
 
-    // Kirim data ke Google Apps Script via POST (CORS handle)
-    fetch(API_URL, {
-      method: "POST",
-      mode: "no-cors", // Memotong problem pembatasan CORS browser luar
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ barcodeId: decodedText })
-    })
-    .then(() => {
-      // Karena menggunakan 'no-cors', kita tidak bisa membaca isi JSON respons secara langsung,
-      // tapi data dipastikan masuk ke Google Sheet.
-      showStatus("✅ Berhasil dikirim ke sistem!", "msg-success");
-      updateHistoryTable(decodedText);
-      
-      // Buka kunci scanner kembali setelah jeda 3 detik
-      setTimeout(() => { 
-        isScanning = true; 
-        showStatus("", ""); 
-      }, 3000);
-    })
-    .catch(err => {
-      showStatus("❌ Gagal mengirim data: " + err.message, "msg-error");
-      setTimeout(() => { isScanning = true; }, 3000);
+  // Fungsi Menjalankan Kamera Scanner
+  function startCamera() {
+    html5QrcodeScanner = new Html5Qrcode("reader");
+    html5QrcodeScanner.start(
+      { facingMode: "environment" }, // Kamera belakang HP
+      { fps: 12, qrbox: { width: 260, height: 260 } },
+      onScanSuccess
+    ).catch(err => {
+      document.getElementById("reader").innerHTML = `<p style="color:var(--danger); text-align:center; padding:20px; font-size:13px;">Gagal mengakses kamera. Mohon setujui izin kamera pada browser HTTPS Anda.</p>`;
     });
   }
 
-  function showStatus(text, className) {
-    const el = document.getElementById("status");
-    if(!text) { el.style.display = "none"; return; }
+  // Fungsi Ketika QR Code Berhasil Terbaca Kamera
+  function onScanSuccess(decodedText) {
+    if (!canScan) return;
+    canScan = false; 
+
+    setScanStatus("Mencocokkan data ID...", "status-loading");
+
+    // Mengirim Data ke Google Apps Script backend (doPost)
+    fetch(BACKEND_URL, {
+      method: "POST",
+      mode: "no-cors", // Membuka proteksi Cross-Origin Browser
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "scanAbsen", barcodeId: decodedText })
+    })
+    .then(() => {
+      setScanStatus("✅ Absensi Terkirim Sukses!", "status-success");
+      pushToHistory(decodedText);
+      
+      // Jeda 3 detik sebelum kamera siap memproses murid berikutnya
+      setTimeout(() => { 
+        canScan = true; 
+        setScanStatus("", ""); 
+      }, 3000);
+    })
+    .catch(err => {
+      setScanStatus("❌ Koneksi Gagal: " + err.message, "status-error");
+      setTimeout(() => { canScan = true; }, 3000);
+    });
+  }
+
+  function setScanStatus(msg, className) {
+    const el = document.getElementById("status-scanner");
+    if(!msg) { el.style.display = "none"; return; }
     el.className = "";
     el.classList.add(className);
-    el.innerText = text;
+    el.innerText = msg;
     el.style.display = "block";
   }
 
-  function updateHistoryTable(code) {
-    const emptyRow = document.getElementById("emptyRow");
-    if(emptyRow) emptyRow.remove();
+  function pushToHistory(idText) {
+    const list = document.getElementById("history-list");
+    if(list.innerHTML.includes("Belum ada antrean")) list.innerHTML = "";
 
-    const now = new Date();
-    const jam = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    
-    const tbody = document.getElementById("historyBody");
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${jam}</td><td>${code}</td><td>Umum</td><td><span class="badge">Terkirim</span></td>`;
-    tbody.prepend(tr);
+    const t = new Date();
+    const waktu = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0') + ':' + String(t.getSeconds()).padStart(2,'0');
+
+    const item = document.createElement("div");
+    item.className = "history-item";
+    item.innerHTML = `<span>ID: <strong>${idText}</strong></span> <span class="history-time">${waktu} WIB</span>`;
+    list.prepend(item);
   }
 
-  // Inisialisasi Kamera Balik Mandiri
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start(
-    { facingMode: "environment" }, // Prioritaskan kamera belakang HP
-    { fps: 10, qrbox: { width: 250, height: 250 } },
-    onScanSuccess
-  ).catch(err => {
-    document.getElementById("reader").innerHTML = `<p style="color:var(--danger); text-align:center;">Gagal mengakses kamera. Pastikan memberikan izin lokasi/kamera HTTPS.</p>`;
-  });
+  // Fungsi Logika Mengirim Form Login Multi-Role
+  function handleLogin(e) {
+    e.preventDefault();
+    const role = document.getElementById("role").value;
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+    const statusEl = document.getElementById("status-login");
+
+    statusEl.style.color = "var(--primary)";
+    statusEl.innerText = "Memverifikasi akun...";
+
+    // Mengirim data verifikasi login ke Apps Script Backend
+    fetch(BACKEND_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "loginPortal", role: role, username: user, password: pass })
+    })
+    .then(() => {
+      statusEl.style.color = "var(--success)";
+      statusEl.innerText = `Redirecting... Selamat Datang ${role}`;
+      // Anda bisa mengarahkan ke halaman dashboard spesifik jika ada kelanjutannya nanti
+    })
+    .catch(err => {
+      statusEl.style.color = "var(--danger)";
+      statusEl.innerText = "Gagal login: Periksa koneksi internet.";
+    });
+  }
+
+  // Jalankan Kamera secara otomatis begitu halaman dimuat pertama kali
+  window.onload = startCamera;
 </script>
 </body>
 </html>
