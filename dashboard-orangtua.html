@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Wali Murid - E-Absensi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); padding: 16px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    .header { background: var(--primary); color: white; padding: 20px; border-radius: 16px; margin-bottom: 16px; border-bottom: 4px solid var(--accent); position: relative; }
+    .btn-logout { position: absolute; top: 20px; right: 20px; background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 16px; }
+    select, button.btn-cari { padding: 12px; border-radius: 8px; border: 1px solid #dcdfdc; font-size: 14px; }
+    button.btn-cari { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; }
+    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8faf8; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid var(--accent); }
+    .status-badge { font-weight: 700; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <button class="btn-logout" onclick="logout()">Keluar</button>
+      <h2>Wali Murid Portal</h2>
+      <p style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Orang Tua Dari: <strong id="namaAnak">...</strong></p>
+    </div>
+
+    <div class="card">
+      <h3>Cek Riwayat Bulanan</h3>
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <select id="bulan" style="flex: 2;">
+          <option value="07">Juli</option>
+          <option value="08">Agustus</option>
+        </select>
+        <button class="btn-cari" style="flex: 1;" onclick="loadAbsenAnak()">Cari</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom: 12px;">Daftar Kehadiran</h3>
+      <div id="listAbsensi">
+        <p style="text-align: center; color: #64748b; font-size: 13px;">Silakan klik cari untuk memuat data.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwoYf8DwqmK9HAPr_3YWJOQNFy07KC7TsYUbWoVWqBiXCHqTiFXGeHVB8-h3m4o_8G_Hw/exec";
+    
+    if (!localStorage.getItem('auth_token') || localStorage.getItem('user_role') !== 'OrangTua') {
+      window.location.href = 'index.html';
+    }
+    // Nama anak disimpan dari parameter id_terkait / nama di sheet user saat login
+    document.getElementById('namaAnak').textContent = localStorage.getItem('user_nama');
+
+    function loadAbsenAnak() {
+      const bln = document.getElementById('bulan').value;
+      const idTerkait = localStorage.getItem('id_terkait');
+      const container = document.getElementById('listAbsensi');
+      
+      container.innerHTML = '<p style="text-align:center; font-size:13px;">Mencari data di server...</p>';
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'getAbsenAnak', idSiswa: idTerkait, bulan: bln })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(!data.length) {
+          container.innerHTML = '<p style="text-align:center; color:red; font-size:13px;">Tidak ada riwayat absensi bulan ini.</p>';
+          return;
+        }
+        container.innerHTML = data.map(d => `
+          <div class="history-item">
+            <div>
+              <div style="font-size: 14px; font-weight: 600;">${d.tanggal}</div>
+              <div style="font-size: 11px; color: #64748b;">Jam: ${d.jam || '-'}</div>
+            </div>
+            <div class="status-badge" style="color: ${d.status === 'Masuk' ? 'green' : 'red'};">${d.status}</div>
+          </div>
+        `).join('');
+      });
+    }
+    function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+  </script>
+</body>
+</html>
