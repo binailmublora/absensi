@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Guru - E-Absensi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .header { background: var(--primary); color: white; padding: 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 4px solid var(--accent); }
+    .card { background: var(--white); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
+    .btn-logout { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-nav { background: var(--primary); color: white; text-decoration: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; display: inline-block; }
+    select { padding: 10px; border-radius: 8px; border: 1px solid #dcdfdc; outline: none; margin-bottom: 15px; width: 200px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f0; }
+    th { background: #f8faf9; color: var(--primary); }
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .Masuk { background: #d4edda; color: #155724; }
+    .Alpha { background: #fee2e2; color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Portal Akademik Guru</h1>
+        <p>Guru / Staf: <strong id="namaGuru">...</strong></p>
+      </div>
+      <button class="btn-logout" onclick="logout()">Keluar</button>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h2>Daftar Absensi Kehadiran Siswa</h2>
+        <a href="dashboard-export.html" class="btn-nav">📊 Laporan & Cetak Rekapan</a>
+      </div>
+      <div style="margin-top: 15px;">
+        <label style="font-size:14px; font-weight:600;">Filter Kelas: </label>
+        <select id="kelasFilter" onchange="loadAbsenSiswa()">
+          <option value="Semua">Semua Kelas</option>
+          <option value="Abu Bakar">Abu Bakar</option>
+          <option value="Umar bin Khattab">Umar bin Khattab</option>
+        </select>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Nama Siswa</th><th>Kelas</th><th>Jam Scan</th><th>Status</th></tr>
+        </thead>
+        <tbody id="tabelSiswa">
+          <tr><td colspan="4" style="text-align:center;">Memuat data siswa...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwoYf8DwqmK9HAPr_3YWJOQNFy07KC7TsYUbWoVWqBiXCHqTiFXGeHVB8-h3m4o_8G_Hw/exec";
+    
+    if (!localStorage.getItem('auth_token') || localStorage.getItem('user_role') !== 'Guru') {
+      window.location.href = 'index.html';
+    }
+    document.getElementById('namaGuru').textContent = localStorage.getItem('user_nama');
+
+    function loadAbsenSiswa() {
+      const kelas = document.getElementById('kelasFilter').value;
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'getAbsenSiswaHariIni', kelas: kelas })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.getElementById('tabelSiswa');
+        if(!data.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada data absensi untuk kelas ini.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.map(s => `
+          <tr>
+            <td><strong>${s.nama}</strong></td>
+            <td>${s.kelas}</td>
+            <td>${s.jam || '-'}</td>
+            <td><span class="badge ${s.status}">${s.status}</span></td>
+          </tr>
+        `).join('');
+      });
+    }
+
+    function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+    window.onload = loadAbsenSiswa;
+  </script>
+</body>
+</html>
