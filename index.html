@@ -268,8 +268,8 @@
   </div>
 
 <script>
-  // URL WEB APP GOOGLE APPS SCRIPT
-  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyQIdzduL2McCCLp5-nf__9ZSX13A_ll23JQG4SNXkdW9v8EAVIEWs_NPKzToHiiT6jzQ/exec"; 
+  // URL WEB APP GOOGLE APPS SCRIPT (SUDAH DIPERBARUI)
+  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbw5IWr1qAs9CdDsMNy9tE_XgFbXmqjkWgCAJN4Ke915JLOrmmgdbOnLLYIuU26T8kiNGw/exec"; 
   
   let html5QrcodeScanner;
   let canScan = true;
@@ -308,7 +308,6 @@
 
     setScanStatus("Mencocokkan data ID...", "status-loading");
 
-    // Menggunakan metode POST standar (tanpa no-cors) agar server bisa mengembalikan teks respons sukses
     fetch(BACKEND_URL, {
       method: "POST",
       body: JSON.stringify({ action: "scanAbsen", barcodeId: decodedText })
@@ -355,7 +354,7 @@
   }
 
   // ==========================================
-  // PEMBARUAN UTAMA: LOGIKA PENGALIHAN DASHBOARD
+  // LOGIKA PORTAL LOGIN DAN PENGALIHAN DASHBOARD
   // ==========================================
   function handleLogin(e) {
     e.preventDefault();
@@ -377,13 +376,13 @@
         statusEl.style.color = "var(--success)";
         statusEl.innerText = `Login Berhasil! Mengalihkan halaman...`;
 
-        // Menyimpan data sesi login ke penyimpanan browser lokal
-        localStorage.setItem('auth_token', 'TOKEN_VALID_ABSENSI'); 
+        // Menyimpan token dan data identitas ke LocalStorage browser
+        localStorage.setItem('auth_token', res.auth_token); 
         localStorage.setItem('user_nama', res.nama);
         localStorage.setItem('user_role', res.role); 
         localStorage.setItem('id_terkait', res.idTerkait);
 
-        // Redirect otomatis ke file dashboard tujuan di GitHub Pages
+        // Pengalihan halaman yang sinkron dengan penamaan return role Apps Script
         setTimeout(() => {
           if (res.role === 'KepalaSekolah') {
             window.location.href = 'dashboard-kepsek.html';
