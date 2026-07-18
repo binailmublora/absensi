@@ -214,7 +214,6 @@
   <!-- Header Sekolah -->
   <div class="header-app">
     <div class="logo-container">
-      <!-- File logo.png ditaruh di repositori GitHub yang sama -->
       <img src="binailmu.png" alt="Logo Sekolah" onerror="this.src='https://via.placeholder.com/70/0f5132/ffffff?text=LOGO'">
     </div>
     <h1>E-Absensi & Portal Digital</h1>
@@ -255,8 +254,8 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="username">Email Pengguna/ </label>
-          <input type="text" id="username" placeholder="Masukkan Alamat email anda" required>
+          <label for="username">Email Pengguna</label>
+          <input type="email" id="username" placeholder="Masukkan Alamat email anda" required>
         </div>
         <div class="form-group">
           <label for="password">Nomor PIN yang sudah diberikan</label>
@@ -269,7 +268,7 @@
   </div>
 
 <script>
-  // ⚠️ GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+  // URL WEB APP GOOGLE APPS SCRIPT
   const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwoYf8DwqmK9HAPr_3YWJOQNFy07KC7TsYUbWoVWqBiXCHqTiFXGeHVB8-h3m4o_8G_Hw/exec"; 
   
   let html5QrcodeScanner;
@@ -283,11 +282,9 @@
     document.getElementById(tabId).classList.add('active');
     event.currentTarget.classList.add('active');
 
-    // Jika pindah ke tab scan, pastikan kamera aktif
     if (tabId === 'scan-tab') {
       startCamera();
     } else {
-      // Matikan kamera sementara jika pindah ke tab login untuk menghemat baterai HP
       if(html5QrcodeScanner) { try { html5QrcodeScanner.stop(); } catch(e){} }
     }
   }
@@ -296,7 +293,7 @@
   function startCamera() {
     html5QrcodeScanner = new Html5Qrcode("reader");
     html5QrcodeScanner.start(
-      { facingMode: "environment" }, // Kamera belakang HP
+      { facingMode: "environment" },
       { fps: 12, qrbox: { width: 260, height: 260 } },
       onScanSuccess
     ).catch(err => {
@@ -311,25 +308,26 @@
 
     setScanStatus("Mencocokkan data ID...", "status-loading");
 
-    // Mengirim Data ke Google Apps Script backend (doPost)
+    // Menggunakan metode POST standar (tanpa no-cors) agar server bisa mengembalikan teks respons sukses
     fetch(BACKEND_URL, {
       method: "POST",
-      mode: "no-cors", // Membuka proteksi Cross-Origin Browser
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "scanAbsen", barcodeId: decodedText })
     })
-    .then(() => {
-      setScanStatus("✅ Absensi Terkirim Sukses!", "status-success");
-      pushToHistory(decodedText);
-      
-      // Jeda 3 detik sebelum kamera siap memproses murid berikutnya
+    .then(response => response.json())
+    .then(res => {
+      if(res.ok) {
+        setScanStatus("✅ " + res.msg, "status-success");
+        pushToHistory(decodedText);
+      } else {
+        setScanStatus("❌ " + res.msg, "status-error");
+      }
       setTimeout(() => { 
         canScan = true; 
         setScanStatus("", ""); 
       }, 3000);
     })
     .catch(err => {
-      setScanStatus("❌ Koneksi Gagal: " + err.message, "status-error");
+      setScanStatus("❌ Koneksi Gagal atau Respons Invalid", "status-error");
       setTimeout(() => { canScan = true; }, 3000);
     });
   }
@@ -356,7 +354,9 @@
     list.prepend(item);
   }
 
-  // Fungsi Logika Mengirim Form Login Multi-Role
+  // ==========================================
+  // PEMBARUAN UTAMA: LOGIKA PENGALIHAN DASHBOARD
+  // ==========================================
   function handleLogin(e) {
     e.preventDefault();
     const role = document.getElementById("role").value;
@@ -367,25 +367,45 @@
     statusEl.style.color = "var(--primary)";
     statusEl.innerText = "Memverifikasi akun...";
 
-    // Mengirim data verifikasi login ke Apps Script Backend
     fetch(BACKEND_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "loginPortal", role: role, username: user, password: pass })
     })
-    .then(() => {
-      statusEl.style.color = "var(--success)";
-      statusEl.innerText = `Redirecting... Selamat Datang ${role}`;
-      // Anda bisa mengarahkan ke halaman dashboard spesifik jika ada kelanjutannya nanti
+    .then(response => response.json())
+    .then(res => {
+      if (res.ok) {
+        statusEl.style.color = "var(--success)";
+        statusEl.innerText = `Login Berhasil! Mengalihkan halaman...`;
+
+        // Menyimpan data sesi login ke penyimpanan browser lokal
+        localStorage.setItem('auth_token', 'TOKEN_VALID_ABSENSI'); 
+        localStorage.setItem('user_nama', res.nama);
+        localStorage.setItem('user_role', res.role); 
+        localStorage.setItem('id_terkait', res.idTerkait);
+
+        // Redirect otomatis ke file dashboard tujuan di GitHub Pages
+        setTimeout(() => {
+          if (res.role === 'KepalaSekolah') {
+            window.location.href = 'dashboard-kepsek.html';
+          } else if (res.role === 'Guru') {
+            window.location.href = 'dashboard-guru.html';
+          } else if (res.role === 'OrangTua') {
+            window.location.href = 'dashboard-orangtua.html';
+          }
+        }, 1000);
+
+      } else {
+        statusEl.style.color = "var(--danger)";
+        statusEl.innerText = "Gagal login: " + res.msg;
+      }
     })
     .catch(err => {
       statusEl.style.color = "var(--danger)";
-      statusEl.innerText = "Gagal login: Periksa koneksi internet.";
+      statusEl.innerText = "Terjadi kendala jaringan saat otentikasi.";
+      console.error(err);
     });
   }
 
-  // Jalankan Kamera secara otomatis begitu halaman dimuat pertama kali
   window.onload = startCamera;
 </script>
 </body>
