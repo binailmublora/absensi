@@ -184,7 +184,7 @@
   </div>
 
   <script>
-    // Mengambil nama user langsung lewat Scriptlet server untuk log 'DICATAT OLEH'
+    // Menyimpan nama user langsung dari server untuk data kolom "DICATAT OLEH"
     const NAMA_USER_GLOBAL = "<?= namaHanya ?>";
 
     // Fungsi Navigasi Tab Halaman
@@ -320,7 +320,7 @@
       }
     }
 
-    // Eksekusi load awal aplikasi
+    // Pemicu inisialisasi utama saat aplikasi dibuka pertama kali
     window.onload = function() {
       ambilDaftarKelasDashboard();
     };
