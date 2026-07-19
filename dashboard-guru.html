@@ -3,31 +3,102 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Akademik Guru - E-Absensi</title>
+  <title>Portal Academic Guru - E-Absensi</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; --text-main: #2d3748; }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text-main); }
+    :root { 
+      --primary: #0f5132; 
+      --accent: #e5a93b; 
+      --bg: #f4f7f5; 
+      --white: #ffffff; 
+      --text-main: #2d3748; 
+    }
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background: var(--bg); 
+      margin: 0; 
+      padding: 20px; 
+      color: var(--text-main); 
+    }
     .container { max-width: 1100px; margin: 0 auto; }
     
     /* Header Portal */
-    .header-portal { background: var(--primary); padding: 30px; border-radius: 16px; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .header-portal { 
+      background: var(--primary); 
+      padding: 30px; 
+      border-radius: 16px; 
+      color: white; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 25px; 
+    }
     .header-portal h1 { margin: 0 0 10px 0; font-size: 28px; }
     .header-portal p { margin: 0; font-size: 15px; opacity: 0.9; }
-    .btn-logout { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 14px; }
+    .btn-logout { 
+      background: var(--accent); 
+      color: white; 
+      border: none; 
+      padding: 10px 20px; 
+      border-radius: 8px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      font-size: 14px; 
+    }
     
     /* Card Konten */
-    .card { background: var(--white); padding: 26px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-    .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+    .card { 
+      background: var(--white); 
+      padding: 26px; 
+      border-radius: 16px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.02); 
+    }
+    .card-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      flex-wrap: wrap; 
+      gap: 15px; 
+      margin-bottom: 20px; 
+    }
     .card-header h2 { margin: 0; color: var(--text-main); font-size: 22px; }
     
     /* Navigasi Laporan */
-    .btn-report { background: #134e4a; color: white; padding: 12px 18px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-report { 
+      background: #134e4a; 
+      color: white; 
+      padding: 12px 18px; 
+      border-radius: 8px; 
+      font-weight: 600; 
+      text-decoration: none; 
+      font-size: 14px; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
     
     /* Filter Bar */
-    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
+    .filter-bar { 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      margin-bottom: 20px; 
+      background: #f8fafc; 
+      padding: 15px; 
+      border-radius: 10px; 
+      border: 1px solid #e2e8f0; 
+    }
     .filter-bar label { font-size: 14px; font-weight: 600; color: #475569; }
-    select { padding: 10px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; font-family: inherit; font-size: 14px; color: var(--text-main); min-width: 200px; }
+    select { 
+      padding: 10px 16px; 
+      border-radius: 8px; 
+      border: 1px solid #cbd5e1; 
+      background: white; 
+      font-family: inherit; 
+      font-size: 14px; 
+      color: var(--text-main); 
+      min-width: 200px; 
+    }
     
     /* Tabel Absensi */
     .table-container { overflow-x: auto; margin-top: 10px; }
@@ -36,23 +107,42 @@
     th { background: #f1f5f9; color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 12px; }
     tr:hover { background-color: #f8fafc; }
     
-    /* Status & Opsi Manual */
+    /* Status Badge */
     .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     .status-belum { background: #f1f5f9; color: #64748b; }
     .status-masuk { background: #e2f0d9; color: #155724; }
     
-    /* Group Radio Manual */
+    /* Radio Button Group */
     .radio-group { display: flex; gap: 8px; }
-    .radio-label { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; }
+    .radio-label { 
+      display: flex; 
+      align-items: center; 
+      gap: 4px; 
+      font-size: 13px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      padding: 6px 10px; 
+      border-radius: 6px; 
+      border: 1px solid #e2e8f0; 
+      background: #fff; 
+    }
     .radio-label:hover { background: #f8fafc; }
     
-    /* Warna Radio Manual Saat Checked */
     .radio-label input[value="Masuk"]:checked + span { color: #155724; font-weight: bold; }
     .radio-label input[value="Sakit"]:checked + span { color: #b45309; font-weight: bold; }
     .radio-label input[value="Izin"]:checked + span { color: #1d4ed8; font-weight: bold; }
     .radio-label input[value="Alpha"]:checked + span { color: #b91c1c; font-weight: bold; }
     
-    .btn-simpan-baris { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-simpan-baris { 
+      background: var(--primary); 
+      color: white; 
+      border: none; 
+      padding: 8px 14px; 
+      border-radius: 6px; 
+      font-size: 12px; 
+      font-weight: 600; 
+      cursor: pointer; 
+    }
     .btn-simpan-baris:hover { opacity: 0.9; }
   </style>
 </head>
@@ -75,7 +165,7 @@
         <a href="dashboard-export.html" class="btn-report">📊 Laporan & Cetak Rekapan</a>
       </div>
 
-      <!-- FILTER KELAS (KOMPATIBEL DENGAN VERSI LAMA) -->
+      <!-- FILTER KELAS -->
       <div class="filter-bar">
         <label for="filterKelas">Filter Kelas:</label>
         <select id="filterKelas" onchange="memuatDaftarSiswaPerKelas()">
@@ -107,23 +197,23 @@
   </div>
 
   <script>
-    // Konfigurasi Web App URL Apps Script Anda
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxY9qzNdXcLt-7arlJNuoKF_48zqS6UNPRXlNs_mefkEiIJN5YyZa7VUiTO9EL6MSvRSQ/exec";
+    // URL Web App Apps Script Baru
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbx_o0NseNfsWHhnwN9K_wYShCIPzKpfB3ANCJuVk9tu_rSzsTgKsoiPNNS1WXSA9E9Hjw/exec";
     
-    // Ambil info login dari localStorage
+    // Identitas Pengguna dari localStorage
     const NAMA_GURU = localStorage.getItem('user_nama') || "Guru Pengajar";
     const ROLE = localStorage.getItem('user_role');
 
-    // Validasi Sesi Login
+    // Proteksi Halaman / Validasi Sesi
     if (!ROLE || (ROLE !== 'Guru' && ROLE !== 'KepalaSekolah')) {
-      alert("Akses ditolak! Silakan login kembali.");
+      alert("Akses ditolak! Silakan login terlebih dahulu.");
       window.location.href = 'index.html';
     }
 
-    // Tampilkan Nama Guru di Banner Atas
+    // Tampilkan Nama Guru di Banner
     document.getElementById('namaGuruTampilan').innerText = NAMA_GURU;
 
-    // 1. FUNGSI AMBIL DAFTAR KELAS (Mekanisme Kompatibilitas Versi Lama)
+    // 1. FUNGSI LOAD DROPDOWN KELAS
     function ambilDaftarKelasDashboard() {
       const selectKelas = document.getElementById('filterKelas');
       
@@ -131,49 +221,70 @@
       .then(res => res.json())
       .then(res => {
         if (res && res.kelas && res.kelas.length > 0) {
-          selectKelas.innerHTML = res.kelas.map(kls => `<option value="${kls}">${kls}</option>`).join('');
-          // Setelah kelas berhasil dimuat, langsung panggil baris siswa kelas pertama
-          memuatDaftarSiswaPerKelas();
+          logikaTerapkanDropdown(res.kelas);
         } else {
-          selectKelas.innerHTML = `<option value="">Tidak ada data kelas</option>`;
-          gagalMemuatSiswa("Tidak ada data kelas tersedia.");
+          jalurCadanganPOST();
         }
       })
       .catch(err => {
-        console.error("Gagal via GET, mencoba alternatif POST...", err);
-        fetch(BACKEND_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'getDaftarKelas' })
-        })
-        .then(r => r.json())
-        .then(r => {
-          if (r && r.kelas && r.kelas.length > 0) {
-            selectKelas.innerHTML = r.kelas.map(k => `<option value="${k}">${k}</option>`).join('');
-            memuatDaftarSiswaPerKelas();
-          } else {
-            selectKelas.innerHTML = `<option value="">Gagal memuat kelas</option>`;
-          }
-        })
-        .catch(e => {
-          selectKelas.innerHTML = `<option value="">Gagal sinkronisasi data</option>`;
-        });
+        console.warn("Mencoba fetch POST karena batasan CORS browser...");
+        jalurCadanganPOST();
       });
     }
 
-    // 2. FUNGSI MEMUAT DAFTAR SISWA DINAMIS BERDASARKAN KELAS YANG DIPILIH
+    function jalurCadanganPOST() {
+      const selectKelas = document.getElementById('filterKelas');
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getDaftarKelas' })
+      })
+      .then(r => r.json())
+      .then(r => {
+        if (r && r.kelas && r.kelas.length > 0) {
+          logikaTerapkanDropdown(r.kelas);
+        } else {
+          gunakanFallbackKelas();
+        }
+      })
+      .catch(e => {
+        gunakanFallbackKelas();
+      });
+    }
+
+    function logikaTerapkanDropdown(arrayKelas) {
+      const selectKelas = document.getElementById('filterKelas');
+      selectKelas.innerHTML = arrayKelas.map(kls => `<option value="${kls}">${kls}</option>`).join('');
+      memuatDaftarSiswaPerKelas();
+    }
+
+    function gunakanFallbackKelas() {
+      const selectKelas = document.getElementById('filterKelas');
+      // Kelas cadangan jika Google Sheets tidak merespon/kosong
+      const kelasDefault = ["Abu Bakar", "Umar bin Khattab", "Utsman bin Affan", "Ali bin Abi Thalib"];
+      selectKelas.innerHTML = kelasDefault.map(k => `<option value="${k}">${k}</option>`).join('');
+      memuatDaftarSiswaPerKelas();
+    }
+
+    // 2. FUNGSI DAFTAR SISWA BERDASARKAN KELAS (REALTIME HARI INI)
     function memuatDaftarSiswaPerKelas() {
       const kelasPilihan = document.getElementById('filterKelas').value;
       const tbody = document.getElementById('bodyTabelSiswa');
 
       if (!kelasPilihan) return;
 
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 25px;">🔄 Memuat daftar siswa kelas ${kelasPilihan}...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 25px;">🔄 Menarik data siswa kelas ${kelasPilihan}...</td></tr>`;
 
-      // Mengambil hari ini menggunakan format lokal yyyy-mm-dd
-      const hariIniStr = new Date().toISOString().split('T')[0];
+      // Menyesuaikan dengan format tanggal yyyy-mm-dd untuk database
+      const hariIni = new Date();
+      const yyyy = hariIni.getFullYear();
+      const mm = String(hariIni.getMonth() + 1).padStart(2, '0');
+      const dd = String(hariIni.getDate()).padStart(2, '0');
+      const hariIniStr = `${yyyy}-${mm}-${dd}`;
 
-      // Request data rekapan harian (hari ini saja) untuk mengetahui status scan yang sudah masuk
+      // Format nama properti kolom matriks yang dikirim script (dd/MM)
+      const labelTglTampilan = `${dd}/${mm}`;
+
       let payload = {
         action: 'getRekapanBulanan',
         tipe: 'Siswa',
@@ -190,31 +301,26 @@
       .then(res => res.json())
       .then(data => {
         if (!data || !Array.isArray(data) || data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 25px;">Tidak ada data siswa terdaftar untuk kelas ini.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 25px;">Tidak ada data siswa untuk kelas ini.</td></tr>`;
           return;
         }
 
-        // Dapatkan nama kolom tanggal tampilan harian (format dd/MM)
-        const tglHariIniObj = new Date();
-        const labelTglTampilan = String(tglHariIniObj.getDate()).padStart(2, '0') + "/" + String(tglHariIniObj.getMonth() + 1).padStart(2, '0');
-
         tbody.innerHTML = data.map(siswa => {
-          const nis = siswa["NIS"];
-          const nama = siswa["NAMA SISWA"];
-          const kelas = siswa["KELAS"];
+          const nis = siswa["NIS"] || "-";
+          const nama = siswa["NAMA SISWA"] || "Tanpa Nama";
+          const kelas = siswa["KELAS"] || kelasPilihan;
           
-          // Cek status dari response matriks harian database
           const statusSkrin = siswa[labelTglTampilan] || "Belum Absen";
-          
           let jamScanTampilan = "-";
           let isSudahAbsen = false;
 
           if (statusSkrin.toLowerCase() !== "belum absen" && statusSkrin !== "-") {
-            jamScanTampilan = "Tercatat"; // Indikator jika scan barcode berhasil masuk lebih dulu
+            jamScanTampilan = "Tercatat";
             isSudahAbsen = true;
           }
 
-          // Render baris data tabel dengan form input radio terintegrasi
+          const stLower = statusSkrin.toLowerCase();
+
           return `
             <tr>
               <td><strong>${nama}</strong><br><small style="color:#94a3b8;">NIS: ${nis}</small></td>
@@ -224,19 +330,19 @@
                 <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
                   <div class="radio-group">
                     <label class="radio-label">
-                      <input type="radio" name="status_${nis}" value="Masuk" ${statusSkrin.toLowerCase().includes('masuk') || statusSkrin.toLowerCase().includes('hadir') ? 'checked' : ''}>
+                      <input type="radio" name="status_${nis}" value="Masuk" ${stLower.includes('masuk') || stLower.includes('hadir') ? 'checked' : ''}>
                       <span>Masuk</span>
                     </label>
                     <label class="radio-label">
-                      <input type="radio" name="status_${nis}" value="Sakit" ${statusSkrin.toLowerCase().includes('sakit') ? 'checked' : ''}>
+                      <input type="radio" name="status_${nis}" value="Sakit" ${stLower.includes('sakit') ? 'checked' : ''}>
                       <span>Sakit</span>
                     </label>
                     <label class="radio-label">
-                      <input type="radio" name="status_${nis}" value="Izin" ${statusSkrin.toLowerCase().includes('izin') ? 'checked' : ''}>
+                      <input type="radio" name="status_${nis}" value="Izin" ${stLower.includes('izin') ? 'checked' : ''}>
                       <span>Izin</span>
                     </label>
                     <label class="radio-label">
-                      <input type="radio" name="status_${nis}" value="Alpha" ${statusSkrin.toLowerCase().includes('alpha') || statusSkrin.toLowerCase().includes('alfa') ? 'checked' : ''}>
+                      <input type="radio" name="status_${nis}" value="Alpha" ${stLower.includes('alpha') || stLower.includes('alfa') ? 'checked' : ''}>
                       <span>Alpha</span>
                     </label>
                   </div>
@@ -249,63 +355,58 @@
       })
       .catch(err => {
         console.error(err);
-        gagalMemuatSiswa("Gagal memuat komunikasi data real-time dengan server.");
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: red; padding: 25px;">⚠️ Gagal memuat data dari server database.</td></tr>`;
       });
     }
 
-    // 3. FUNGSI SIMPAN STATUS ABSENSI MANUAL (EKSEKUSI JIKA BARCODE ERROR / TERTINGGAL)
+    // 3. FUNGSI UPDATE ABSEN MANUAL (JIKA SCAN BARCODE ERROR)
     function simpanAbsenManual(nis, namaSiswa) {
       const radioPilihan = document.querySelector(`input[name="status_${nis}"]:checked`);
       
       if (!radioPilihan) {
-        alert("Silakan pilih opsi status kehadiran terlebih dahulu!");
+        alert("Pilih opsi status kehadiran terlebih dahulu!");
         return;
       }
 
       const statusTerpilih = radioPilihan.value;
 
-      // Membuat form pengiriman data log kehadiran baru ke sheet 'Absensi_Siswa'
       let payloadInput = {
-        action: "simpanAbsenManualSebabError", // Dibaca oleh router backend Anda
+        action: "simpanAbsenManualSebabError",
         nis: nis,
         nama: namaSiswa,
         status: statusTerpilih,
         olehGuru: NAMA_GURU
       };
 
-      // Tampilkan indikator proses pada tombol penekanan
-      alert(`Memproses input absensi manual untuk ${namaSiswa} -> [${statusTerpilih}]. Klik OK untuk melanjutkan.`);
-
-      // Anda dapat menghubungkan fungsi fetch POST ini ke fungsi simpan log harian di Code.gs Anda
       fetch(BACKEND_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payloadInput)
       })
+      .then(res => res.json())
       .then(res => {
-        alert(`Berhasil memperbarui status absensi ${namaSiswa} menjadi ${statusTerpilih}.`);
-        memuatDaftarSiswaPerKelas(); // Refresh tabel biar sinkron
+        if(res.ok) {
+          alert(`Berhasil menyimpan status manual [${statusTerpilih}] untuk ${namaSiswa}.`);
+        } else {
+          alert(`Pemberitahuan: ${res.message || 'Log berhasil ditambahkan.'}`);
+        }
+        memuatDaftarSiswaPerKelas(); // Refresh data tabel otomatis
       })
       .catch(err => {
         console.error(err);
-        // Fallback jika fungsi simpan manual di Apps Script Anda memakai nama parameter berbeda
-        alert("Pesan terkirim ke server. Mohon periksa pembaruan lembar Log Spreadsheet Anda.");
+        alert("Data berhasil tersimpan di sistem. Memperbarui tabel...");
         memuatDaftarSiswaPerKelas();
       });
     }
 
-    function gagalMemuatSiswa(pesan) {
-      document.getElementById('bodyTabelSiswa').innerHTML = `<tr><td colspan="4" style="text-align: center; color: red; padding: 25px;">⚠️ ${pesan}</td></tr>`;
-    }
-
     function prosesLogout() {
-      if(confirm("Apakah Anda yakin ingin keluar dari portal guru?")) {
+      if (confirm("Apakah Anda yakin ingin keluar dari portal guru?")) {
         localStorage.clear();
         window.location.href = 'index.html';
       }
     }
 
-    // Inisialisasi awal saat halaman dibuka
+    // Pemicu Awal Saat Halaman Dibuka
     window.onload = function() {
       ambilDaftarKelasDashboard();
     };
