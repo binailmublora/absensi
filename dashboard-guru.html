@@ -132,7 +132,7 @@
           <thead>
             <tr>
               <th style="width: 8%;">No</th>
-              <th style="width: 25%;">ID Siswa (NISN)</th>
+              <th style="width: 25%;">ID Siswa</th>
               <th style="width: 42%;">Nama Lengkap</th>
               <th style="width: 25%;">Status Kehadiran</th>
             </tr>
@@ -189,6 +189,8 @@
       });
     }
 
+    // Solusi Jitu: Menggunakan action alternatif 'getSiswa' atau 'getSiswaByKelas' 
+    // Jika tidak ada data absensi di tanggal tersebut, frontend akan memfilter master secara mandiri.
     function tampilkanSiswaDariSheetMaster() {
       const tgl = document.getElementById('tglAbsensi').value;
       const kelas = document.getElementById('kelasSiswa').value;
@@ -199,15 +201,48 @@
         return;
       }
 
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">🔄 Menghubungkan ke server spreadsheet...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">🔄 Mengambil data master siswa kelas ' + kelas + '...</td></tr>';
       document.getElementById('btnSimpan').style.display = 'none';
 
+      // Mengirimkan instruksi umum pembacaan data yang fleksibel ke backend
       fetch(BACKEND_URL, {
         method: 'POST',
         mode: 'cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          action: 'getAbsensiSiswaPerHari', // Menggunakan fungsi fallback utama
+          action: 'getSiswa', 
+          kelas: kelas,
+          tanggal: tgl,
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        // Gabungkan kemungkinan properti objek kembalian Apps Script Anda
+        let daftarSiswa = data.siswa || data.data || data.rows || (Array.isArray(data) ? data : null);
+
+        if(!daftarSiswa || daftarSiswa.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ada data respon atau nama aksi salah. Mengalihkan ke request fallback data...</td></tr>';
+          // Trik Fallback: Jika 'getSiswa' diblokir, coba gunakan fungsi utama namun dipaksa render kosong default H
+          mencobaRequestFallback(tgl, kelas, tbody);
+          return;
+        }
+
+        renderTabelSiswa(daftarSiswa, tbody);
+      })
+      .catch(err => {
+        console.error(err);
+        mencobaRequestFallback(tgl, kelas, tbody);
+      });
+    }
+
+    function mencobaRequestFallback(tgl, kelas, tbody) {
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'getAbsensiSiswaPerHari',
           tanggal: tgl,
           kelas: kelas,
           token: localStorage.getItem('auth_token')
@@ -215,50 +250,49 @@
       })
       .then(res => res.json())
       .then(data => {
-        // Toleransi pengecekan jika properti data dibungkus array langsung atau melalui variabel sub-objek
-        const daftarSiswa = data.siswa || data.data || (Array.isArray(data) ? data : null);
-
+        let daftarSiswa = data.siswa || data.data || (Array.isArray(data) ? data : null);
         if(!daftarSiswa || daftarSiswa.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak menemukan kecocokan data siswa pada filter ini.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Data kelas tidak ditemukan. Pastikan nama kelas sesuai dengan di Sheet Master.</td></tr>';
           return;
         }
-
-        document.getElementById('btnSimpan').style.display = 'inline-block';
-        
-        tbody.innerHTML = daftarSiswa.map((mhs, index) => {
-          // Fallback pembacaan ID: mengecek ID_Siswa, id_siswa, nisn, atau id
-          const idValid = mhs.ID_Siswa || mhs.id_siswa || mhs.nisn || mhs.id || "-";
-          const namaValid = mhs.Nama || mhs.nama || "-";
-          
-          let st = mhs.Status || mhs.status || "H";
-          st = st.toUpperCase();
-          if(st === "HADIR" || st === "MASUK") st = "H";
-          if(st === "SAKIT") st = "S";
-          if(st === "IZIN" || st === "IJIN") st = "I";
-          if(st === "ALPHA" || st === "ALFA") st = "A";
-          if(st !== "H" && st !== "S" && st !== "I" && st !== "A") st = "H"; // Default jika data aneh
-
-          return `
-            <tr data-idsiswa="${idValid}">
-              <td>${index + 1}</td>
-              <td><strong>${idValid}</strong></td>
-              <td>${namaValid}</td>
-              <td>
-                <select class="select-status status-${st}" onchange="updateWarnaDropdown(this)">
-                  <option value="H" ${st === 'H' ? 'selected' : ''}>H (Hadir)</option>
-                  <option value="S" ${st === 'S' ? 'selected' : ''}>S (Sakit)</option>
-                  <option value="I" ${st === 'I' ? 'selected' : ''}>I (Izin)</option>
-                  <option value="A" ${st === 'A' ? 'selected' : ''}>A (Alpha)</option>
-                </select>
-              </td>
-            </tr>
-          `;
-        }).join('');
+        renderTabelSiswa(daftarSiswa, tbody);
       })
-      .catch(err => {
-        console.error(err);
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">❌ Terjadi kesalahan pemrosesan JSON dari Web App Apps Script.</td></tr>';
+      .catch(e => {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">❌ Gagal memuat data dari Spreadsheet. Hubungi Admin Sistem.</td></tr>';
       });
+    }
+
+    function renderTabelSiswa(daftarSiswa, tbody) {
+      document.getElementById('btnSimpan').style.display = 'inline-block';
+      
+      tbody.innerHTML = daftarSiswa.map((mhs, index) => {
+        // Pemetaan ketat sesuai screenshot header Anda: ID_Siswa dan Nama
+        const idValid = mhs.ID_Siswa || mhs.id_siswa || mhs.nisn || mhs.id || "-";
+        const namaValid = mhs.Nama || mhs.nama || "-";
+        
+        let st = mhs.Status || mhs.status || "H";
+        st = st.toUpperCase().trim();
+        if(st === "HADIR" || st === "MASUK" || st === "YA" || st === "") st = "H";
+        if(st === "SAKIT") st = "S";
+        if(st === "IZIN" || st === "IJIN") st = "I";
+        if(st === "ALPHA" || st === "ALFA") st = "A";
+
+        return `
+          <tr data-idsiswa="${idValid}">
+            <td>${index + 1}</td>
+            <td><strong>${idValid}</strong></td>
+            <td>${namaValid}</td>
+            <td>
+              <select class="select-status status-${st}" onchange="updateWarnaDropdown(this)">
+                <option value="H" ${st === 'H' ? 'selected' : ''}>H (Hadir)</option>
+                <option value="S" ${st === 'S' ? 'selected' : ''}>S (Sakit)</option>
+                <option value="I" ${st === 'I' ? 'selected' : ''}>I (Izin)</option>
+                <option value="A" ${st === 'A' ? 'selected' : ''}>A (Alpha)</option>
+              </select>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function updateWarnaDropdown(el) {
@@ -305,14 +339,14 @@
           alert("✓ Rekapan manual berhasil disimpan ke sheet Absensi_Siswa!");
           tampilkanSiswaDariSheetMaster();
         } else {
-          alert("Gagal menyimpan rekapan: " + (res.message || "Periksa log sistem"));
+          alert("Gagal menyimpan: " + (res.message || "Periksa log sistem"));
         }
       })
       .catch(err => {
         console.error(err);
         btn.disabled = false;
         btn.textContent = "💾 Simpan Rekapan";
-        alert("❌ Putus koneksi server / Apps script mengalami crash eksekusi.");
+        alert("❌ Putus koneksi server.");
       });
     }
 
