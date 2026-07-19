@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Kepala Sekolah - E-Absensi</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <base target="_top">
+  <!-- Menyertakan style global dari project Apps Script Anda -->
+  <?!= include('Style'); ?>
+  
   <style>
     :root {
       --primary: #0f5132;
@@ -12,102 +12,158 @@
       --bg: #f4f7f5;
       --text-main: #1e293b;
       --white: #ffffff;
+      --danger: #dc3545;
+      --success: #198754;
     }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); padding: 20px; }
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background: var(--bg); 
+      color: var(--text-main); 
+      padding: 20px; 
+    }
+    
     .container { max-width: 900px; margin: 0 auto; }
-    .header { background: var(--primary); color: white; padding: 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 4px solid var(--accent); }
-    .btn-logout { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
-    .card-stat { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid var(--primary); }
-    .card-stat h3 { font-size: 14px; color: #64748b; }
-    .card-stat p { font-size: 28px; font-weight: 700; color: var(--primary); margin-top: 8px; }
-    .card-table { background: var(--white); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
-    .btn-nav { background: var(--primary); color: white; text-decoration: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; display: inline-block; margin-top: 10px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf2f0; font-size: 14px; }
-    th { background: #f8faf9; color: var(--primary); font-weight: 600; }
+    
+    .header { 
+      background: var(--primary); 
+      color: white; 
+      padding: 24px; 
+      border-radius: 16px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      border-bottom: 4px solid var(--accent); 
+    }
+    
+    .grid-stats { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 16px; 
+      margin-bottom: 24px; 
+    }
+    
+    .card-stat { 
+      background: var(--white); 
+      padding: 24px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
+      border-left: 4px solid var(--primary); 
+    }
+    
+    .card-stat.alert-card { border-left-color: var(--danger); }
+    .card-stat.success-card { border-left-color: var(--success); }
+    
+    .card-stat h3 { font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-stat p { font-size: 32px; font-weight: 700; color: var(--primary); margin-top: 8px; }
+    .card-stat .detail-text { font-size: 12px; color: #64748b; margin-top: 4px; }
+    
+    .action-panel {
+      background: var(--white);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+      text-align: center;
+    }
+    
+    .btn-nav { 
+      background: var(--primary); 
+      color: white; 
+      text-decoration: none; 
+      padding: 12px 24px; 
+      border-radius: 8px; 
+      font-size: 15px; 
+      font-weight: 600; 
+      display: inline-block; 
+      transition: background 0.2s;
+    }
+    
+    .btn-nav:hover { background: #0b3d26; }
   </style>
 </head>
 <body>
   <div class="container">
+    
+    <!-- Topbar Header Dashboard -->
     <div class="header">
       <div>
         <h1>Dashboard Kepala Sekolah</h1>
-        <p>Selamat Datang, <span id="namaUser">...</span></p>
+        <!-- Mengambil nama user secara dinamis dari Apps Script server-side -->
+        <p>Selamat Datang, <strong><?= user.nama ?></strong></p> 
       </div>
-      <button class="btn-logout" onclick="logout()">Keluar</button>
     </div>
 
+    <!-- Navigasi Utama Otomatis -->
+    <?!= navHtml ?>
+    <br>
+
+    <!-- 4 Blok Rangkuman Utama Presensi Hari Ini -->
     <div class="grid-stats">
-      <div class="card-stat">
-        <h3>Guru Hadir Hari Ini</h3>
-        <p id="guruHadir">0</p>
+      <!-- 1. Ringkasan Guru Hadir -->
+      <div class="card-stat success-card">
+        <h3>Guru Hadir</h3>
+        <p id="guruHadir">-</p>
+        <div class="detail-text">Sudah melakukan absensi masuk</div>
       </div>
-      <div class="card-stat">
-        <h3>Siswa Hadir Hari Ini</h3>
-        <p id="siswaHadir">0</p>
+      
+      <!-- 2. Ringkasan Guru Tidak Hadir -->
+      <div class="card-stat alert-card">
+        <h3>Guru Absen/Alfa</h3>
+        <p id="guruAbsen" style="color: var(--danger);">-</p>
+        <div class="detail-text" id="detailGuruTidakHadir">Memuat data keterangan...</div>
       </div>
-      <div class="card-stat">
-        <h3>Total Guru Alfa/Belum Absen</h3>
-        <p id="guruAbsen" style="color: #dc3545;">0</p>
+      
+      <!-- 3. Ringkasan Siswa Hadir -->
+      <div class="card-stat success-card">
+        <h3>Siswa Hadir</h3>
+        <p id="siswaHadir">-</p>
+        <div class="detail-text">Total dari seluruh kelas</div>
+      </div>
+      
+      <!-- 4. Ringkasan Siswa Tidak Hadir -->
+      <div class="card-stat alert-card">
+        <h3>Siswa Absen/Alfa</h3>
+        <p id="siswaAbsen" style="color: var(--danger);">-</p>
+        <div class="detail-text" id="detailSiswaTidakHadir">Memuat data keterangan...</div>
       </div>
     </div>
 
-    <div class="card-table">
-      <h2>Log Aktivitas Kehadiran Guru Terbaru</h2>
-      <div style="text-align: right;">
-        <a href="dashboard-export.html" class="btn-nav">📊 Buka Menu Rekapan & Export</a>
-      </div>
-      <table>
-        <thead>
-          <tr><th>Waktu</th><th>Nama Guru</th><th>Jabatan</th><th>Status</th><th>Metode</th></tr>
-        </thead>
-        <tbody id="logAktivitas">
-          <tr><td colspan="5" style="text-align:center;">Memuat data absensi...</td></tr>
-        </tbody>
-      </table>
+    <!-- Panel Menu Rekapan Semula -->
+    <div class="action-panel">
+      <!-- Menggunakan format routing internal agar token tidak hilang -->
+      <a href="?page=rekap&token=<?= encodeURIComponent(token) ?>" class="btn-nav">📊 Buka Menu Rekapan & Export</a>
     </div>
+
   </div>
 
   <script>
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwoYf8DwqmK9HAPr_3YWJOQNFy07KC7TsYUbWoVWqBiXCHqTiFXGeHVB8-h3m4o_8G_Hw/exec";
-    
-    if (!localStorage.getItem('auth_token') || localStorage.getItem('user_role') !== 'KepalaSekolah') {
-      window.location.href = 'index.html';
-    }
-    document.getElementById('namaUser').textContent = localStorage.getItem('user_nama');
+    // Token dilempar langsung lewat backend doGet() di code.gs
+    const TOKEN = "<?= token ?>";
 
     function ambilDataKepsek() {
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'getDataKepsek' })
-      })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('guruHadir').textContent = data.stats.guruHadir;
-        document.getElementById('siswaHadir').textContent = data.stats.siswaHadir;
-        document.getElementById('guruAbsen').textContent = data.stats.guruAbsen;
-        
-        const tbody = document.getElementById('logAktivitas');
-        if(!data.logs.length) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada aktivitas hari ini.</td></tr>';
-          return;
-        }
-        tbody.innerHTML = data.logs.map(log => `
-          <tr>
-            <td><strong>${log.jam}</strong></td>
-            <td>${log.nama}</td>
-            <td>${log.jabatan}</td>
-            <td><span style="color:green;font-weight:600;">${log.status}</span></td>
-            <td>${log.metode}</td>
-          </tr>
-        `).join('');
-      }).catch(() => {
-        document.getElementById('logAktivitas').innerHTML = '<tr><td colspan="5" style="text-align:center;color:red;">Gagal mengambil data dari Google Sheet.</td></tr>';
-      });
+      // Memanggil fungsi server Apps Script secara asinkron tanpa fetch eksternal
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if(data) {
+            // Pasang angka statistik utama
+            document.getElementById('guruHadir').textContent = data.stats.guruHadir;
+            document.getElementById('guruAbsen').textContent = data.stats.guruAbsen;
+            document.getElementById('siswaHadir').textContent = data.stats.siswaHadir;
+            document.getElementById('siswaAbsen').textContent = data.stats.siswaAbsen;
+            
+            // Tampilkan detail keterangan alasan tidak hadir jika ada
+            document.getElementById('detailGuruTidakHadir').innerHTML = data.details.guruKeterangan || "Semua staf terabsen.";
+            document.getElementById('detailSiswaTidakHadir').innerHTML = data.details.siswaKeterangan || "Tidak ada siswa absen.";
+          }
+        })
+        .withFailureHandler(function(err) {
+          console.error("Gagal memuat data dari spreadsheet: ", err);
+        })
+        .getDataKombinasiKepsek(TOKEN); // Pastikan fungsi pembaca statistik ini terdaftar di GS Anda
     }
 
-    function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+    // Jalankan penarikan data presensi saat dokumen selesai dimuat
     window.onload = ambilDataKepsek;
   </script>
 </body>
