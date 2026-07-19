@@ -162,18 +162,21 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getDaftarKelas' })
       })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Backend return status not ok");
+        return res.json();
+      })
       .then(res => {
         const selectKelas = document.getElementById('kelasSiswa');
-        if (res.ok && res.kelas.length > 0) {
+        if (res && res.ok && res.kelas && res.kelas.length > 0) {
           selectKelas.innerHTML = res.kelas.map(kls => `<option value="${kls}">${kls}</option>`).join('');
         } else {
-          selectKelas.innerHTML = `<option value="">Gagal memuat kelas</option>`;
+          selectKelas.innerHTML = `<option value="">Tidak ada data kelas</option>`;
         }
       })
       .catch(err => {
         console.error(err);
-        document.getElementById('kelasSiswa').innerHTML = `<option value="">Error Database</option>`;
+        document.getElementById('kelasSiswa').innerHTML = `<option value="">Gagal Sinkronisasi Kelas</option>`;
       });
     }
 
