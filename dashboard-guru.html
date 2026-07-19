@@ -128,7 +128,7 @@
     <div class="header-portal">
       <div>
         <h1>Portal Akademik Guru</h1>
-        <p>Guru / Staf: <strong id="namaGuruTampilan">Memuat...</strong></p>
+        <p>Guru / Staf: <strong id="namaGuruTampilan"><?= user.nama ?></strong></p>
       </div>
       <button class="btn-logout" onclick="prosesLogout()">Keluar 🚪</button>
     </div>
@@ -143,7 +143,7 @@
       <div class="filter-bar">
         <label for="filterKelas">Pilih Kelas Mengajar:</label>
         <select id="filterKelas" onchange="muatMasterSiswa()">
-          <option value="">🔄 Menyambungkan ke Google Sheets...</option>
+          <option value="">🔄 Mengambil data kelas...</option>
         </select>
       </div>
 
@@ -170,218 +170,29 @@
   </div>
 
   <script>
-    // URL Web App Google Apps Script Utama Anda
-    const BACKEND_URL = "<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Akademik Guru - Input Absensi Manual</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root { 
-      --primary: #0f5132; 
-      --accent: #e5a93b; 
-      --bg: #f4f7f5; 
-      --white: #ffffff; 
-      --text-main: #2d3748; 
-    }
-    body { 
-      font-family: 'Plus Jakarta Sans', sans-serif; 
-      background: var(--bg); 
-      margin: 0; 
-      padding: 20px; 
-      color: var(--text-main); 
-    }
-    .container { max-width: 1100px; margin: 0 auto; }
-    
-    .header-portal { 
-      background: var(--primary); 
-      padding: 30px; 
-      border-radius: 16px; 
-      color: white; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      margin-bottom: 25px; 
-    }
-    .header-portal h1 { margin: 0 0 10px 0; font-size: 28px; }
-    .header-portal p { margin: 0; font-size: 15px; opacity: 0.9; }
-    .btn-logout { 
-      background: var(--accent); 
-      color: white; 
-      border: none; 
-      padding: 10px 20px; 
-      border-radius: 8px; 
-      font-weight: 600; 
-      cursor: pointer; 
-      font-size: 14px; 
-    }
-    
-    .card { 
-      background: var(--white); 
-      padding: 26px; 
-      border-radius: 16px; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.02); 
-    }
-    .card-header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      flex-wrap: wrap; 
-      gap: 15px; 
-      margin-bottom: 20px; 
-    }
-    .card-header h2 { margin: 0; color: var(--text-main); font-size: 22px; }
-    
-    .filter-bar { 
-      display: flex; 
-      align-items: center; 
-      gap: 10px; 
-      margin-bottom: 20px; 
-      background: #f8fafc; 
-      padding: 15px; 
-      border-radius: 10px; 
-      border: 1px solid #e2e8f0; 
-    }
-    .filter-bar label { font-size: 14px; font-weight: 600; color: #475569; }
-    select { 
-      padding: 10px 16px; 
-      border-radius: 8px; 
-      border: 1px solid #cbd5e1; 
-      background: white; 
-      font-family: inherit; 
-      font-size: 14px; 
-      min-width: 200px; 
-    }
-    
-    .table-container { overflow-x: auto; margin-top: 10px; }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th, td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-    th { background: #f1f5f9; color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 12px; }
-    
-    .radio-group { display: flex; gap: 8px; }
-    .radio-label { 
-      display: flex; 
-      align-items: center; 
-      gap: 4px; 
-      font-size: 13px; 
-      font-weight: 600; 
-      cursor: pointer; 
-      padding: 6px 10px; 
-      border-radius: 6px; 
-      border: 1px solid #e2e8f0; 
-      background: white;
-    }
-    
-    .radio-label input[value="Masuk"]:checked + span { color: #155724; font-weight: bold; }
-    .radio-label input[value="Sakit"]:checked + span { color: #b45309; font-weight: bold; }
-    .radio-label input[value="Izin"]:checked + span { color: #1d4ed8; font-weight: bold; }
-    .radio-label input[value="Alpha"]:checked + span { color: #b91c1c; font-weight: bold; }
-    
-    .btn-simpan-baris { 
-      background: var(--primary); 
-      color: white; 
-      border: none; 
-      padding: 8px 14px; 
-      border-radius: 6px; 
-      font-size: 12px; 
-      font-weight: 600; 
-      cursor: pointer; 
-      transition: background 0.2s;
-    }
-    .btn-simpan-baris:hover { background: #0a3622; }
-    .btn-simpan-baris:disabled { background: #cbd5e1; cursor: not-allowed; }
-  </style>
-</head>
-<body>
-
-  <div class="container">
-    <!-- Topbar Informasi Guru -->
-    <div class="header-portal">
-      <div>
-        <h1>Portal Akademik Guru</h1>
-        <p>Guru / Staf: <strong id="namaGuruTampilan">Memuat...</strong></p>
-      </div>
-      <button class="btn-logout" onclick="prosesLogout()">Keluar 🚪</button>
-    </div>
-
-    <!-- Konten Utama Card Form -->
-    <div class="card">
-      <div class="card-header">
-        <h2>Daftar Absensi Kehadiran Siswa (Input Manual)</h2>
-      </div>
-
-      <!-- Filter Dropdown Pemilihan Kelas -->
-      <div class="filter-bar">
-        <label for="filterKelas">Pilih Kelas Mengajar:</label>
-        <select id="filterKelas" onchange="muatMasterSiswa()">
-          <option value="">🔄 Menyambungkan ke Google Sheets...</option>
-        </select>
-      </div>
-
-      <!-- Tabel Daftar Siswa -->
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 35%;">NAMA SISWA</th>
-              <th style="width: 25%;">KELAS</th>
-              <th style="width: 40%; text-align: center;">INPUT MANUAL / STATUS KEHADIRAN</th>
-            </tr>
-          </thead>
-          <tbody id="bodyTabelSiswa">
-            <tr>
-              <td colspan="3" style="text-align: center; color: #64748b; padding: 30px;">
-                Silakan pilih kelas terlebih dahulu untuk memunculkan daftar siswa.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // URL Web App Google Apps Script Utama Anda
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyVCp3hLKPxfh8RbPId4jjc28mcSaIfuIJx0o-vlwvq2y3bmy4q-cU0YWzfR-QbEhddIA/exec";
-    
-    // Konfigurasi Nama Guru Pengajar (diambil dari login/session)
-    const NAMA_GURU = localStorage.getItem('user_nama') || "Ratih Nur Rahmasari"; 
-    document.getElementById('namaGuruTampilan').innerText = NAMA_GURU;
+    // Menangkap variabel nama guru yang disuntikkan langsung dari server Google Apps Script
+    const NAMA_GURU = "<?= user.nama ?>";
 
     /**
-     * FUNGSI 1: Mengambil daftar kelas unik untuk dropdown (POST Bypass CORS)
+     * FUNGSI 1: Mengambil daftar kelas unik langsung dari jalur internal Google Apps Script
      */
     function ambilDaftarKelasDashboard() {
       const selectKelas = document.getElementById('filterKelas');
       
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getDaftarKelas' })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Respons jaringan tidak OK");
-        return res.json();
-      })
-      .then(res => {
-        if (res && res.error) {
-          selectKelas.innerHTML = `<option value="">Error: ${res.error}</option>`;
-          return;
-        }
-        
-        if (res && res.kelas && res.kelas.length > 0) {
-          selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
-            res.kelas.map(k => `<option value="${k}">${k}</option>`).join('');
-        } else {
-          selectKelas.innerHTML = '<option value="">Gagal memuat daftar / Kelas Kosong</option>';
-        }
-      })
-      .catch(err => {
-        console.error("Error Fetching Daftar Kelas:", err);
-        selectKelas.innerHTML = '<option value="">Gagal memuat data (Periksa Web App)</option>';
-      });
+      google.script.run
+        .withSuccessHandler(function(classList) {
+          if (classList && classList.length > 0) {
+            selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
+              classList.map(k => `<option value="${k}">${k}</option>`).join('');
+          } else {
+            selectKelas.innerHTML = '<option value="">Data kosong / Sheet tidak ditemukan</option>';
+          }
+        })
+        .withFailureHandler(function(err) {
+          console.error(err);
+          selectKelas.innerHTML = '<option value="">Gagal memuat data (Periksa Apps Script)</option>';
+        })
+        .ambilDaftarKelasInternal();
     }
 
     /**
@@ -398,51 +209,39 @@
 
       tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 30px;">🔄 Mengambil data master siswa kelas ${kelas}...</td></tr>`;
 
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getDaftarSiswa', kelas: kelas })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Respons jaringan tidak OK");
-        return res.json();
-      })
-      .then(data => {
-        if (data && data.error) {
-          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red; padding: 20px;">Error: ${data.error}</td></tr>`;
-          return;
-        }
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 20px;">Tidak ada data siswa terdaftar di kelas ini.</td></tr>`;
+            return;
+          }
 
-        if (!data || data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 20px;">Tidak ada data siswa terdaftar di kelas ini atau sheet Data_Siswa kosong.</td></tr>`;
-          return;
-        }
-
-        // Tampilkan data siswa ke dalam baris tabel
-        tbody.innerHTML = data.map(siswa => {
-          return `
-            <tr>
-              <td><strong>${siswa.nama}</strong><br><small style="color:#94a3b8;">ID: ${siswa.idSiswa}</small></td>
-              <td>${siswa.kelas}</td>
-              <td>
-                <div style="display: flex; justify-content: center; align-items: center; gap: 12px;">
-                  <div class="radio-group">
-                    <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Masuk" checked> <span>Masuk</span></label>
-                    <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Sakit"> <span>Sakit</span></label>
-                    <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Izin"> <span>Izin</span></label>
-                    <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Alpha"> <span>Alpha</span></label>
+          // Tampilkan data siswa ke dalam baris tabel
+          tbody.innerHTML = data.map(siswa => {
+            return `
+              <tr>
+                <td><strong>${siswa.nama}</strong><br><small style="color:#94a3b8;">ID: ${siswa.idSiswa}</small></td>
+                <td>${siswa.kelas}</td>
+                <td>
+                  <div style="display: flex; justify-content: center; align-items: center; gap: 12px;">
+                    <div class="radio-group">
+                      <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Masuk" checked> <span>Masuk</span></label>
+                      <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Sakit"> <span>Sakit</span></label>
+                      <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Izin"> <span>Izin</span></label>
+                      <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Alpha"> <span>Alpha</span></label>
+                    </div>
+                    <button id="btn_${siswa.idSiswa}" class="btn-simpan-baris" onclick="eksekusiAbsenManual('${siswa.idSiswa}', '${siswa.nama}', '${siswa.kelas}')">Simpan</button>
                   </div>
-                  <button id="btn_${siswa.idSiswa}" class="btn-simpan-baris" onclick="eksekusiAbsenManual('${siswa.idSiswa}', '${siswa.nama}', '${siswa.kelas}')">Simpan</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      })
-      .catch(err => {
-        console.error("Error Memuat Siswa:", err);
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red; padding: 20px;">Gagal memuat data siswa. Pastikan Web App Apps Script sudah dirilis sebagai 'Anyone'.</td></tr>`;
-      });
+                </td>
+              </tr>
+            `;
+          }).join('');
+        })
+        .withFailureHandler(function(err) {
+          console.error(err);
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red; padding: 20px;">Gagal mengambil data siswa dari server.</td></tr>`;
+        })
+        .getDaftarSiswaServer(kelas);
     }
 
     /**
@@ -452,12 +251,11 @@
       const pilihanStatus = document.querySelector(`input[name="status_${idSiswa}"]:checked`).value;
       const tombolSimpan = document.getElementById(`btn_${idSiswa}`);
       
-      // Kunci tombol agar tidak diklik dua kali saat proses kirim data berlangsung
+      // Kunci tombol agar tidak diklik dua kali saat proses berlangsung
       tombolSimpan.disabled = true;
       tombolSimpan.innerText = "⏳...";
 
       const payload = {
-        action: "simpanAbsenManual",
         idSiswa: idSiswa,
         nama: nama,
         kelas: kelas,
@@ -466,206 +264,32 @@
         keterangan: "Input Manual via Dashboard"
       };
 
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Gagal merespons");
-        return res.json();
-      })
-      .then(res => {
-        if (res.ok || res.success) {
-          alert(`Berhasil! Absensi [${pilihanStatus}] untuk siswa bernama "${nama}" sukses dicatat.`);
-          tombolSimpan.innerText = "Tersimpan ✓";
-          tombolSimpan.style.background = "#155724";
-        } else {
-          alert("Gagal menyimpan: " + (res.message || "Terjadi kendala pada sistem Spreadsheet."));
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.ok) {
+            alert(`Berhasil! Absensi [${pilihanStatus}] untuk siswa bernama "${nama}" sukses dicatat.`);
+            tombolSimpan.innerText = "Tersimpan ✓";
+            tombolSimpan.style.background = "#155724";
+          } else {
+            alert("Gagal menyimpan: " + (res.message || "Terjadi kendala pada sistem Spreadsheet."));
+            tombolSimpan.disabled = false;
+            tombolSimpan.innerText = "Simpan";
+          }
+        })
+        .withFailureHandler(function(err) {
+          console.error(err);
+          alert("Gagal memproses data ke server.");
           tombolSimpan.disabled = false;
           tombolSimpan.innerText = "Simpan";
-        }
-      })
-      .catch(err => {
-        console.error("Error Menyimpan Absensi:", err);
-        alert("Gagal memproses data. Periksa jaringan internet Anda.");
-        tombolSimpan.disabled = false;
-        tombolSimpan.innerText = "Simpan";
-      });
+        })
+        .simpanAbsenManualServer(payload);
     }
 
     /**
-     * FUNGSI 4: Penanganan Logout aplikasi
+     * FUNGSI 4: Penanganan Logout
      */
     function prosesLogout() {
       if (confirm("Apakah Anda yakin ingin keluar dari halaman Portal ini?")) {
-        localStorage.clear();
-        window.location.reload();
-      }
-    }
-
-    // Panggil otomatis fungsi dropdown kelas ketika jendela browser selesai dimuat
-    window.onload = function() {
-      ambilDaftarKelasDashboard();
-    };
-  </script>
-</body>
-</html>";
-    
-    // Konfigurasi Nama Guru Pengajar (diambil dari login/session)
-    const NAMA_GURU = localStorage.getItem('user_nama') || "Ratih Nur Rahmasari"; 
-    document.getElementById('namaGuruTampilan').innerText = NAMA_GURU;
-
-    /**
-     * FUNGSI 1: Mengambil daftar kelas unik untuk dropdown (POST Bypass CORS)
-     */
-    function ambilDaftarKelasDashboard() {
-      const selectKelas = document.getElementById('filterKelas');
-      
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getDaftarKelas' })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Respons jaringan tidak OK");
-        return res.json();
-      })
-      .then(res => {
-        if (res && res.error) {
-          selectKelas.innerHTML = `<option value="">Error: ${res.error}</option>`;
-          return;
-        }
-        
-        if (res && res.kelas && res.kelas.length > 0) {
-          selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
-            res.kelas.map(k => `<option value="${k}">${k}</option>`).join('');
-        } else {
-          selectKelas.innerHTML = '<option value="">Gagal memuat daftar / Kelas Kosong</option>';
-        }
-      })
-      .catch(err => {
-        console.error("Error Fetching Daftar Kelas:", err);
-        selectKelas.innerHTML = '<option value="">Gagal memuat data (Periksa Web App)</option>';
-      });
-    }
-
-    /**
-     * FUNGSI 2: Memuat daftar siswa berdasarkan kelas yang dipilih dari dropdown
-     */
-    function muatMasterSiswa() {
-      const kelas = document.getElementById('filterKelas').value;
-      const tbody = document.getElementById('bodyTabelSiswa');
-      
-      if (!kelas) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 20px;">Silakan pilih kelas terlebih dahulu untuk memunculkan daftar siswa.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 30px;">🔄 Mengambil data master siswa kelas ${kelas}...</td></tr>`;
-
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getDaftarSiswa', kelas: kelas })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Respons jaringan tidak OK");
-        return res.json();
-      })
-      .then(data => {
-        if (data && data.error) {
-          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red; padding: 20px;">Error: ${data.error}</td></tr>`;
-          return;
-        }
-
-        if (!data || data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 20px;">Tidak ada data siswa terdaftar di kelas ini atau sheet Data_Siswa kosong.</td></tr>`;
-          return;
-        }
-
-        // Tampilkan data siswa ke dalam baris tabel
-        tbody.innerHTML = data.map(siswa => {
-          return `
-            <tr>
-              <td><strong>${siswa.nama}</strong><br><small style="color:#94a3b8;">ID: ${siswa.idSiswa}</small></td>
-              <td>${siswa.kelas}</td>
-              <td>
-                <div style="display: flex; justify-content: center; align-items: center; gap: 12px;">
-                  <div class="radio-group">
-                    <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Masuk" checked> <span>Masuk</span></label>
-                    <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Sakit"> <span>Sakit</span></label>
-                    <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Izin"> <span>Izin</span></label>
-                    <label class="radio-label"><input type="radio" name="status_${siswa.idSiswa}" value="Alpha"> <span>Alpha</span></label>
-                  </div>
-                  <button id="btn_${siswa.idSiswa}" class="btn-simpan-baris" onclick="eksekusiAbsenManual('${siswa.idSiswa}', '${siswa.nama}', '${siswa.kelas}')">Simpan</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      })
-      .catch(err => {
-        console.error("Error Memuat Siswa:", err);
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red; padding: 20px;">Gagal memuat data siswa. Pastikan Web App Apps Script sudah dirilis sebagai 'Anyone'.</td></tr>`;
-      });
-    }
-
-    /**
-     * FUNGSI 3: Mengirim baris data absensi individu untuk ditulis ke sheet 'Log_Absensi'
-     */
-    function eksekusiAbsenManual(idSiswa, nama, kelas) {
-      const pilihanStatus = document.querySelector(`input[name="status_${idSiswa}"]:checked`).value;
-      const tombolSimpan = document.getElementById(`btn_${idSiswa}`);
-      
-      // Kunci tombol agar tidak diklik dua kali saat proses kirim data berlangsung
-      tombolSimpan.disabled = true;
-      tombolSimpan.innerText = "⏳...";
-
-      const payload = {
-        action: "simpanAbsenManual",
-        idSiswa: idSiswa,
-        nama: nama,
-        kelas: kelas,
-        status: pilihanStatus,
-        olehGuru: NAMA_GURU,
-        keterangan: "Input Manual via Dashboard"
-      };
-
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Gagal merespons");
-        return res.json();
-      })
-      .then(res => {
-        if (res.ok || res.success) {
-          alert(`Berhasil! Absensi [${pilihanStatus}] untuk siswa bernama "${nama}" sukses dicatat.`);
-          tombolSimpan.innerText = "Tersimpan ✓";
-          tombolSimpan.style.background = "#155724";
-        } else {
-          alert("Gagal menyimpan: " + (res.message || "Terjadi kendala pada sistem Spreadsheet."));
-          tombolSimpan.disabled = false;
-          tombolSimpan.innerText = "Simpan";
-        }
-      })
-      .catch(err => {
-        console.error("Error Menyimpan Absensi:", err);
-        alert("Gagal memproses data. Periksa jaringan internet Anda.");
-        tombolSimpan.disabled = false;
-        tombolSimpan.innerText = "Simpan";
-      });
-    }
-
-    /**
-     * FUNGSI 4: Penanganan Logout aplikasi
-     */
-    function prosesLogout() {
-      if (confirm("Apakah Anda yakin ingin keluar dari halaman Portal ini?")) {
-        localStorage.clear();
         window.location.reload();
       }
     }
