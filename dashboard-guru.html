@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Akademik Guru - Absensi & Rekap</title>
+  <title>Portal Akademik - Absensi & Rekap</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root { 
@@ -33,7 +33,7 @@
       margin-bottom: 25px; 
     }
     .header-portal h1 { margin: 0 0 10px 0; font-size: 28px; }
-    .header-portal p { margin: 0; font-size: 15px; opacity: 0.9; }
+    .header-portal p { margin: 0; font-size: 16px; opacity: 0.95; letter-spacing: 0.5px;}
     
     .btn-logout { 
       background: var(--accent); 
@@ -46,57 +46,29 @@
       font-size: 14px; 
     }
 
-    /* Menu Navigasi Tab */
-    .tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
     .tab-btn {
-      padding: 12px 24px;
-      background: #e2e8f0;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      color: #475569;
-      transition: all 0.2s;
+      padding: 12px 24px; background: #e2e8f0; border: none; border-radius: 8px;
+      font-weight: 600; cursor: pointer; color: #475569; transition: all 0.2s;
     }
-    .tab-btn.active {
-      background: var(--primary);
-      color: white;
-    }
+    .tab-btn.active { background: var(--primary); color: white; }
     
     .card { 
-      background: var(--white); 
-      padding: 26px; 
-      border-radius: 16px; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.02); 
-      display: none;
+      background: var(--white); padding: 26px; border-radius: 16px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.02); display: none;
     }
     .card.active { display: block; }
     .card-header { margin-bottom: 20px; }
     .card-header h2 { margin: 0; color: var(--text-main); font-size: 22px; }
     
     .filter-bar { 
-      display: flex; 
-      align-items: center; 
-      gap: 10px; 
-      margin-bottom: 20px; 
-      background: #f8fafc; 
-      padding: 15px; 
-      border-radius: 10px; 
-      border: 1px solid #e2e8f0; 
+      display: flex; align-items: center; gap: 10px; margin-bottom: 20px; 
+      background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; 
     }
     .filter-bar label { font-size: 14px; font-weight: 600; color: #475569; }
     select { 
-      padding: 10px 16px; 
-      border-radius: 8px; 
-      border: 1px solid #cbd5e1; 
-      background: white; 
-      font-family: inherit; 
-      font-size: 14px; 
-      min-width: 200px; 
+      padding: 10px 16px; border-radius: 8px; border: 1px solid #cbd5e1; 
+      background: white; font-family: inherit; font-size: 14px; min-width: 200px; 
     }
     
     .table-container { overflow-x: auto; margin-top: 10px; }
@@ -106,16 +78,9 @@
     
     .radio-group { display: flex; gap: 8px; }
     .radio-label { 
-      display: flex; 
-      align-items: center; 
-      gap: 4px; 
-      font-size: 13px; 
-      font-weight: 600; 
-      cursor: pointer; 
-      padding: 6px 10px; 
-      border-radius: 6px; 
-      border: 1px solid #e2e8f0; 
-      background: white;
+      display: flex; align-items: center; gap: 4px; font-size: 13px; 
+      font-weight: 600; cursor: pointer; padding: 6px 10px; border-radius: 6px; 
+      border: 1px solid #e2e8f0; background: white;
     }
     
     .radio-label input[value="Masuk"]:checked + span { color: #155724; font-weight: bold; }
@@ -124,23 +89,12 @@
     .radio-label input[value="Alpha"]:checked + span { color: #b91c1c; font-weight: bold; }
     
     .btn-simpan-baris { 
-      background: var(--primary); 
-      color: white; 
-      border: none; 
-      padding: 8px 14px; 
-      border-radius: 6px; 
-      font-size: 12px; 
-      font-weight: 600; 
-      cursor: pointer; 
+      background: var(--primary); color: white; border: none; 
+      padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; 
     }
     .btn-simpan-baris:disabled { background: #cbd5e1; cursor: not-allowed; }
     
-    .badge {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-    }
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
     .badge.Masuk { background: #d1e7dd; color: #0f5132; }
     .badge.Sakit { background: #fff3cd; color: #664d03; }
     .badge.Izin { background: #cff4fc; color: #055160; }
@@ -153,8 +107,9 @@
     <!-- Topbar -->
     <div class="header-portal">
       <div>
-        <h1>Portal Akademik Guru</h1>
-        <p>Guru / Staf: <strong id="namaGuruTampilan"><?= user.nama ?></strong></p>
+        <h1>Portal Akademik Sekolah</h1>
+        <!-- Bagian ini akan diisi teks sapaan secara dinamis -->
+        <p><span id="teksSapaanUser">⏳ Memeriksa sesi login...</span></p>
       </div>
       <button class="btn-logout" onclick="prosesLogout()">Keluar 🚪</button>
     </div>
@@ -229,8 +184,29 @@
   </div>
 
   <script>
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxyNzJIGsCWTFv_T385FMGJpbSze4CsbWqRodTJF2grcqi15nww6qTiutZadVgNVIEFIg/exec";
-    const NAMA_GURU = "<?= user.nama ?>";
+    // Menyimpan nama user global untuk keperluan log pencatatan absensi
+    let NAMA_USER_GLOBAL = "Guru / Staf";
+
+    // Fungsi 1: Validasi User Login & Tampilkan Sapaan Khusus
+    function inisialisasiSapaanUser() {
+      // Mengirimkan nama file saat ini ke server untuk mencocokkan Role (Guru/Kepsek/OrangTua)
+      const namaHalamanIni = "DashboardGuru"; 
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if(res && res.teksSapaan) {
+            document.getElementById('teksSapaanUser').innerText = res.teksSapaan;
+            NAMA_USER_GLOBAL = res.namaLengkap;
+          }
+          // Setelah nama user sukses termuat, jalankan pengambilan kelas
+          ambilDaftarKelasDashboard();
+        })
+        .withFailureHandler(function() {
+          document.getElementById('teksSapaanUser').innerText = "Ahlan wa sahlan, Pengguna";
+          ambilDaftarKelasDashboard();
+        })
+        .getUserLoginData(namaHalamanIni);
+    }
 
     // Fungsi Navigasi Tab Halaman
     function switchTab(tabId) {
@@ -245,7 +221,7 @@
       }
     }
 
-    // Fungsi 1: Load Dropdown Kelas (Internal Apps Script)
+    // Fungsi Dropdown Kelas
     function ambilDaftarKelasDashboard() {
       const selectKelas = document.getElementById('filterKelas');
       google.script.run
@@ -263,7 +239,7 @@
         .ambilDaftarKelasInternal();
     }
 
-    // Fungsi 2: Load Siswa Berdasarkan Kelas
+    // Fungsi Load Siswa
     function muatMasterSiswa() {
       const kelas = document.getElementById('filterKelas').value;
       const tbody = document.getElementById('bodyTabelSiswa');
@@ -298,7 +274,7 @@
         .getDaftarSiswaServer(kelas);
     }
 
-    // Fungsi 3: Kirim Log Absen Siswa ke Sheets
+    // Fungsi Simpan Absen
     function eksekusiAbsenManual(idSiswa, nama, kelas) {
       const pilihanStatus = document.querySelector(`input[name="status_${idSiswa}"]:checked`).value;
       const tombolSimpan = document.getElementById(`btn_${idSiswa}`);
@@ -311,7 +287,7 @@
         nama: nama,
         kelas: kelas,
         status: pilihanStatus,
-        olehGuru: NAMA_GURU,
+        olehGuru: NAMA_USER_GLOBAL,
         keterangan: "Input Manual via Dashboard"
       };
 
@@ -330,16 +306,15 @@
         .simpanAbsenManualServer(payload);
     }
 
-    // Fungsi 4: Menampilkan Rekapan Absensi dari Server
+    // Fungsi Tampilkan Rekapan
     function muatRekapAbsensi() {
       const tbody = document.getElementById('bodyTabelRekap');
       tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">🔄 Memuat data riwayat log absensi...</td></tr>`;
 
-      // Memanggil fungsi baru di Apps Script yang bertugas membaca sheet 'Log_Absensi'
       google.script.run
         .withSuccessHandler(function(logs) {
           if (!logs || logs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">Belum ada log absensi terinput di sheet Log_Absensi.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">Belum ada log absensi terinput.</td></tr>`;
             return;
           }
           tbody.innerHTML = logs.map(log => `
@@ -353,22 +328,19 @@
             </tr>
           `).join('');
         })
-        .withFailureHandler(function() {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 20px;">Gagal mengambil data rekap. Pastikan fungsi rekap sudah ada di GS.</td></tr>`;
-        })
         .ambilLogAbsensiRekap();
     }
 
-    // Fungsi 5: Keluar/Logout Resmi yang Kompatibel dengan Iframe Apps Script
+    // Fungsi Keluar/Logout Resmi (Iframe Parent Safe)
     function prosesLogout() {
-      if (confirm("Apakah Anda yakin ingin keluar dari Portal Akademik ini?")) {
-        // Mengarahkan window paling luar (parent window) agar keluar dari sandbox Google Apps Script
+      if (confirm("Apakah Anda yakin ingin keluar dari Halaman Portal Akademik ini?")) {
         window.top.location.href = "https://www.google.com";
       }
     }
 
+    // Eksekusi inisialisasi user login saat halaman dimuat pertama kali
     window.onload = function() {
-      ambilDaftarKelasDashboard();
+      inisialisasiSapaanUser();
     };
   </script>
 </body>
