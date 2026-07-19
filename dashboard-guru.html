@@ -15,7 +15,6 @@
       --danger: #dc3545;
       --success: #198754;
       --warning: #ffc107;
-      --info: #0dcaf0;
     }
     
     body { 
@@ -62,7 +61,7 @@
     }
 
     label { font-size: 12px; font-weight: 600; color: #64748b; }
-    select, input[type="date"], button { padding: 10px 14px; border-radius: 8px; font-size: 14px; border: 1px solid #dcdfdc; }
+    select, input[type="date"], button { padding: 10px 14px; border-radius: 8px; font-size: 14px; border: 1px solid #dcdfdc; font-family: inherit; }
     
     button { 
       background: var(--primary); 
@@ -84,6 +83,7 @@
       border-radius: 6px;
       font-weight: 700;
       width: 110px;
+      font-family: inherit;
     }
     .status-H { background-color: #e2f0d9; color: #155724; border-color: #c3e6cb; }
     .status-S { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
@@ -101,7 +101,6 @@
     <div class="header">
       <div>
         <h1>Dashboard Guru</h1>
-        <!-- Teks sapaan telah diperbarui menjadi Ahlan wa sahlan -->
         <p>Ahlan wa sahlan, <strong id="namaUser">...</strong></p> 
       </div>
       <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
@@ -123,8 +122,10 @@
             <option value="">Memuat daftar kelas...</option>
           </select>
         </div>
-        <button onclick="muatDataAbsensiSiswa()">🔍 Cari Siswa</button>
-        <button class="btn-save" id="btnSimpan" onclick="simpanPerubahanAbsensi()" style="display:none;">💾 Simpan Perubahan</button>
+        <!-- Nama tombol diubah sesuai instruksi -->
+        <button onclick="tampilkanSiswaDariSheetMaster()">🔍 Tampilkan Siswa</button>
+        <!-- Tombol simpan perubahan manual ke sheet Absensi_Siswa -->
+        <button class="btn-save" id="btnSimpan" onclick="simpanKeAbsensiSiswa()" style="display:none;">💾 Simpan Rekapan</button>
       </div>
 
       <!-- Tabel Input & Edit Absensi -->
@@ -133,7 +134,7 @@
           <thead>
             <tr>
               <th style="width: 8%;">No</th>
-              <th style="width: 25%;">NISN</th>
+              <th style="width: 25%;">ID Siswa (NISN)</th>
               <th style="width: 42%;">Nama Lengkap</th>
               <th style="width: 25%;">Status Kehadiran</th>
             </tr>
@@ -145,7 +146,7 @@
       </div>
     </div>
 
-    <!-- Panel Menu Rekapan Sesuai Batasan Peran (Role) -->
+    <!-- Panel Menu Rekapan -->
     <div class="action-panel">
       <a href="https://binailmublora.github.io/absensi/dashboard-export.html" target="_top" class="btn-nav">📊 Buka Menu Rekapan & Export</a>
     </div>
@@ -190,7 +191,8 @@
       });
     }
 
-    function muatDataAbsensiSiswa() {
+    // Fungsi menampilkan data dari database sheet master "Siswa" sesuai filter kelas
+    function tampilkanSiswaDariSheetMaster() {
       const tgl = document.getElementById('tglAbsensi').value;
       const kelas = document.getElementById('kelasSiswa').value;
       const tbody = document.getElementById('tabelSiswaBody');
@@ -200,7 +202,7 @@
         return;
       }
 
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">🔄 Menghubungkan ke server spreadsheet...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">🔄 Mengambil data dari sheet master Siswa...</td></tr>';
       document.getElementById('btnSimpan').style.display = 'none';
 
       fetch(BACKEND_URL, {
@@ -208,22 +210,23 @@
         mode: 'cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          action: 'getAbsensiSiswaPerHari',
-          tanggal: tgl,
+          action: 'getSiswaByKelasMaster', // Aksi backend membaca filter sheet master 'Siswa'
           kelas: kelas,
+          tanggal: tgl,
           token: localStorage.getItem('auth_token')
         })
       })
       .then(res => res.json())
       .then(data => {
         if(!data || !data.ok || !data.siswa || data.siswa.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Belum ada data siswa dimasukkan pada kelas ini.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Belum ada data siswa dimasukkan pada kelas ini di sheet master.</td></tr>';
           return;
         }
 
         document.getElementById('btnSimpan').style.display = 'inline-block';
         
         tbody.innerHTML = data.siswa.map((mhs, index) => {
+          // Default awal diatur ke H (Hadir) jika record absensi hari ini kosong
           let st = mhs.status ? mhs.status.toUpperCase() : "H";
           if(st === "HADIR") st = "H";
           if(st === "SAKIT") st = "S";
@@ -231,9 +234,9 @@
           if(st === "ALPHA" || st === "ALFA") st = "A";
 
           return `
-            <tr data-nisn="${mhs.nisn}">
+            <tr data-idsiswa="${mhs.id_siswa}">
               <td>${index + 1}</td>
-              <td><strong>${mhs.nisn}</strong></td>
+              <td><strong>${mhs.id_siswa}</strong></td>
               <td>${mhs.nama}</td>
               <td>
                 <select class="select-status status-${st}" onchange="updateWarnaDropdown(this)">
@@ -249,7 +252,7 @@
       })
       .catch(err => {
         console.error(err);
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">❌ Terjadi kesalahan sinkronisasi data server.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">❌ Terjadi kesalahan sinkronisasi data master.</td></tr>';
       });
     }
 
@@ -257,17 +260,18 @@
       el.className = `select-status status-${el.value}`;
     }
 
-    function simpanPerubahanAbsensi() {
+    // Fungsi melakukan post simpan rekapan manual ke sheet log target "Absensi_Siswa"
+    function simpanKeAbsensiSiswa() {
       const tgl = document.getElementById('tglAbsensi').value;
       const kelas = document.getElementById('kelasSiswa').value;
       const barisTabel = document.querySelectorAll('#tabelSiswaBody tr');
       
       let dataPresensi = [];
       barisTabel.forEach(tr => {
-        const nisn = tr.getAttribute('data-nisn');
+        const idSiswa = tr.getAttribute('data-idsiswa');
         const status = tr.querySelector('.select-status')?.value;
-        if(nisn && status) {
-          dataPresensi.push({ nisn: nisn, status: status });
+        if(idSiswa && status) {
+          dataPresensi.push({ id_siswa: idSiswa, status: status });
         }
       });
 
@@ -282,7 +286,7 @@
         mode: 'cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          action: 'simpanAbsensiSiswa',
+          action: 'simpanRekapManualAbsensiSiswa', // Target endpoint baru untuk log Absensi_Siswa
           tanggal: tgl,
           kelas: kelas,
           data: dataPresensi,
@@ -292,19 +296,19 @@
       .then(res => res.json())
       .then(res => {
         btn.disabled = false;
-        btn.textContent = "💾 Simpan Perubahan";
+        btn.textContent = "💾 Simpan Rekapan";
         if(res.ok) {
-          alert("✓ Data absensi siswa berhasil diperbarui ke Google Sheets!");
-          muatDataAbsensiSiswa();
+          alert("✓ Rekapan manual berhasil disimpan ke sheet Absensi_Siswa!");
+          tampilkanSiswaDariSheetMaster();
         } else {
-          alert("Gagal menyimpan: " + res.message);
+          alert("Gagal menyimpan rekapan: " + res.message);
         }
       })
       .catch(err => {
         console.error(err);
         btn.disabled = false;
-        btn.textContent = "💾 Simpan Perubahan";
-        alert("❌ Putus koneksi server. Gagal memperbarui data.");
+        btn.textContent = "💾 Simpan Rekapan";
+        alert("❌ Putus koneksi server. Gagal memperbarui tabel Absensi_Siswa.");
       });
     }
 
