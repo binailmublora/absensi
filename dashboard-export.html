@@ -16,7 +16,7 @@
     .box-flex label { font-size: 12px; font-weight: 600; color: #64748b; }
     .filter-group { display: flex; flex-direction: column; gap: 4px; }
     select, input[type="date"], button { padding: 12px 16px; border-radius: 8px; font-size: 14px; }
-    select, input[type="date"] { border: 1px solid #dcdfdc; width: 175px; background: #fff; }
+    select, input[type="date"] { border: 1px solid #dcdfdc; width: 175px; background: #fff; font-family: inherit; }
     button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     button.btn-accent { background: var(--accent); }
     button:hover { opacity: 0.9; }
@@ -24,8 +24,11 @@
     th, td { padding: 10px 8px; border: 1px solid #e2e8f0; font-size: 12px; text-align: left; white-space: nowrap; }
     th { background: #f8fafc; color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 11px; }
     tr:nth-child(even) { background-color: #f8fafc; }
-    .preview-box { display: none; margin-top: 20px; border-top: 2px dashed #e2e8f0; padding-top: 15px; }
     
+    /* Area Pratinjau Terpisah */
+    .preview-box { display: none; margin-top: 25px; border-top: 2px dashed #e2e8f0; padding-top: 20px; }
+    
+    /* Warna Status Absensi Matriks */
     .st-masuk { color: #155724; font-weight: bold; background-color: #e2f0d9; text-align: center; }
     .st-sakit { color: #856404; font-weight: bold; background-color: #fff3cd; text-align: center; }
     .st-alpha { color: #721c24; font-weight: bold; background-color: #f8d7da; text-align: center; }
@@ -38,10 +41,10 @@
     
     <h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)</h1>
 
-    <!-- BLOK 1: REKAPAN SISWA (Tampil untuk Peran Guru & Kepsek) -->
+    <!-- BLOK 1: REKAPAN SISWA -->
     <div class="card" id="aksesSiswa" style="display:none;">
       <h2>1. Rekapan Absensi Siswa Berdasarkan Kelas & Tanggal</h2>
-      <p style="font-size: 13px; color: #64748b;">Pilih rentang tanggal spesifik dan kelas untuk memunculkan pratinjau matriks kehadiran siswa.</p>
+      <p style="font-size: 13px; color: #64748b;">Pilih rentang tanggal spesifik dan kelas untuk memunculkan pratinjau tabel matriks kehadiran siswa.</p>
       <div class="box-flex">
         <div class="filter-group">
           <label>Dari Tanggal:</label>
@@ -65,9 +68,9 @@
         </div>
       </div>
 
-      <!-- Pratinjau Terikat Tepat di Bawah Panel Filter Siswa -->
+      <!-- POSISI BARU: Pratinjau Siswa Naik Ke Sini -->
       <div class="preview-box" id="boxPreviewSiswa">
-        <h3 style="color: var(--primary);">📋 Pratinjau Absensi Siswa</h3>
+        <h3 style="color: var(--primary); margin-bottom: 10px;">📋 Pratinjau Lembar Rekapan Data Siswa</h3>
         <div style="overflow-x: auto;">
           <table id="tabelPreviewSiswa">
             <thead><tr id="thPreviewSiswa"></tr></thead>
@@ -77,10 +80,10 @@
       </div>
     </div>
 
-    <!-- BLOK 2: REKAPAN GURU (Hanya Tampil Eksklusif untuk Kepsek) -->
+    <!-- BLOK 2: REKAPAN GURU -->
     <div class="card" id="aksesKepsek" style="display:none;">
       <h2>2. Rekapan Komprehensif Kehadiran Guru</h2>
-      <p style="font-size: 13px; color: #64748b;">Menu khusus Kepala Sekolah untuk memantau performa dan rincian hari kerja guru.</p>
+      <p style="font-size: 13px; color: #64748b;">Menu eksklusif Kepala Sekolah untuk melacak keaktifan harian seluruh guru.</p>
       <div class="box-flex">
         <div class="filter-group">
           <label>Dari Tanggal:</label>
@@ -98,9 +101,9 @@
         </div>
       </div>
 
-      <!-- Pratinjau Terikat Tepat di Bawah Panel Filter Guru -->
+      <!-- POSISI BARU: Pratinjau Guru Berada Di Sini -->
       <div class="preview-box" id="boxPreviewGuru">
-        <h3 style="color: var(--primary);">📋 Pratinjau Absensi Guru</h3>
+        <h3 style="color: var(--primary); margin-bottom: 10px;">📋 Pratinjau Lembar Rekapan Data Guru</h3>
         <div style="overflow-x: auto;">
           <table id="tabelPreviewGuru">
             <thead><tr id="thPreviewGuru"></tr></thead>
@@ -112,14 +115,13 @@
   </div>
 
   <script>
-    // Sinkronisasi dengan URL Apps Script Terbaru Anda
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwrf0xLyKMMg25oRjJ7atHPetwulY3w51X638UPMKoHDQ4sF5AnZv2K4Ec7FBXHQE7ZnA/exec";
     const ROLE = localStorage.getItem('user_role');
     
     let dataSiswaTerunduh = [];
     let dataGuruTerunduh = [];
 
-    // Mengatur Batas Tanggal Default (Awal bulan s/d hari ini)
+    // Mengatur default tanggal kalender (Tanggal 1 bulan ini s/d hari ini)
     function setFormatTanggalDefault() {
       const hariIni = new Date();
       const yyyy = hariIni.getFullYear();
@@ -129,15 +131,12 @@
       const formatHariIni = `${yyyy}-${mm}-${dd}`;
       const formatAwalBulan = `${yyyy}-${mm}-01`;
 
-      ['tglMulaiSiswa', 'tglMulaiGuru'].forEach(id => {
-        if(document.getElementById(id)) document.getElementById(id).value = formatAwalBulan;
-      });
-      ['tglSelesaiSiswa', 'tglSelesaiGuru'].forEach(id => {
-        if(document.getElementById(id)) document.getElementById(id).value = formatHariIni;
-      });
+      if(document.getElementById('tglMulaiSiswa')) document.getElementById('tglMulaiSiswa').value = formatAwalBulan;
+      if(document.getElementById('tglMulaiGuru')) document.getElementById('tglMulaiGuru').value = formatAwalBulan;
+      if(document.getElementById('tglSelesaiSiswa')) document.getElementById('tglSelesaiSiswa').value = formatHariIni;
+      if(document.getElementById('tglSelesaiGuru')) document.getElementById('tglSelesaiGuru').value = formatHariIni;
     }
 
-    // Manajemen Pembatasan Hak Akses Dashboard Laporan
     function konfigurasiHakAksesAplikasi() {
       if (!ROLE) {
         window.location.href = 'index.html';
@@ -149,7 +148,6 @@
         document.getElementById('aksesKepsek').style.display = 'block';
       } else if (ROLE === 'Guru') {
         document.getElementById('aksesSiswa').style.display = 'block';
-        document.getElementById('aksesKepsek').style.removeProperty('display');
         document.getElementById('aksesKepsek').style.display = 'none';
       } else if (ROLE === 'OrangTua') {
         alert("Akses dialihkan menuju dashboard riwayat personal siswa.");
@@ -198,12 +196,12 @@
       }
 
       if (!tMulai || !tSelesai) {
-        alert("Mohon tentukan tanggal mulai dan tanggal selesai!");
+        alert("Mohon tentukan pilihan tanggal mulai dan tanggal selesai terlebih dahulu!");
         return;
       }
 
       if (tMulai > tSelesai) {
-        alert("Tanggal mulai tidak boleh melewati tanggal selesai!");
+        alert("Tanggal mulai tidak boleh melebihi tanggal selesai!");
         return;
       }
 
