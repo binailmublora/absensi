@@ -69,9 +69,6 @@
       font-weight: 600; 
       text-decoration: none; 
       font-size: 14px; 
-      display: inline-flex; 
-      align-items: center; 
-      gap: 8px; 
     }
     
     .filter-bar { 
@@ -111,7 +108,7 @@
       padding: 6px 10px; 
       border-radius: 6px; 
       border: 1px solid #e2e8f0; 
-      background: #white;
+      background: white;
     }
     
     .radio-label input[value="Masuk"]:checked + span { color: #155724; font-weight: bold; }
@@ -135,7 +132,6 @@
 <body>
 
   <div class="container">
-    <!-- HEADER PORTAL -->
     <div class="header-portal">
       <div>
         <h1>Portal Akademik Guru</h1>
@@ -144,14 +140,12 @@
       <button class="btn-logout" onclick="prosesLogout()">Keluar 🚪</button>
     </div>
 
-    <!-- MAIN CARD -->
     <div class="card">
       <div class="card-header">
         <h2>Daftar Absensi Kehadiran Siswa (Input Manual)</h2>
         <a href="dashboard-export.html" class="btn-report">📊 Laporan & Cetak Rekapan</a>
       </div>
 
-      <!-- FILTER KELAS -->
       <div class="filter-bar">
         <label for="filterKelas">Pilih Kelas Mengajar:</label>
         <select id="filterKelas" onchange="muatMasterSiswa()">
@@ -159,20 +153,19 @@
         </select>
       </div>
 
-      <!-- TABEL FORM MANUAL -->
       <div class="table-container">
         <table>
           <thead>
             <tr>
-              <th style="width: 30%;">Nama Siswa</th>
-              <th style="width: 20%;">Kelas</th>
-              <th style="width: 50%; text-align: center;">Opsi Kehadiran & Aksi</th>
+              <th style="width: 35%;">NAMA SISWA</th>
+              <th style="width: 25%;">KELAS</th>
+              <th style="width: 40%; text-align: center;">INPUT MANUAL / STATUS KEHADIRAN</th>
             </tr>
           </thead>
           <tbody id="bodyTabelSiswa">
             <tr>
               <td colspan="3" style="text-align: center; color: #64748b; padding: 30px;">
-                Silakan pilih kelas terlebih dahulu untuk memunculkan form input data siswa.
+                Silakan pilih kelas terlebih dahulu untuk memunculkan daftar siswa.
               </td>
             </tr>
           </tbody>
@@ -182,13 +175,12 @@
   </div>
 
   <script>
-    // URL Apps Script Terbaru Anda
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbx_o0NseNfsWHhnwN9K_wYShCIPzKpfB3ANCJuVk9tu_rSzsTgKsoiPNNS1WXSA9E9Hjw/exec";
+    // URL Web App Apps Script Baru
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxQXkk6c0qjy83z2nTjh3spndGokov2cPsTeBJXuUupDnfxpJkmYuND9bQwEXLdljDqMw/exec";
     
     const NAMA_GURU = localStorage.getItem('user_nama') || "Guru Pengajar";
     const ROLE = localStorage.getItem('user_role');
 
-    // Validasi Sesi Login
     if (!ROLE || (ROLE !== 'Guru' && ROLE !== 'KepalaSekolah')) {
       alert("Sesi berakhir, silakan login kembali.");
       window.location.href = 'index.html';
@@ -196,7 +188,7 @@
 
     document.getElementById('namaGuruTampilan').innerText = NAMA_GURU;
 
-    // 1. Mengambil data dropdown kelas via GET/POST
+    // Load Dropdown Kelas awal
     function ambilDaftarKelasDashboard() {
       fetch(`${BACKEND_URL}?action=getDaftarKelas`)
       .then(res => res.json())
@@ -208,7 +200,7 @@
         }
       })
       .catch(err => {
-        console.warn("Mencoba fetch POST karena CORS...");
+        // Fallback jika GET terkena CORS browser
         fetch(BACKEND_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -225,7 +217,7 @@
       });
     }
 
-    // 2. Memuat daftar master siswa berdasarkan kelas
+    // Menampilkan daftar master siswa berdasarkan kelas pilihan
     function muatMasterSiswa() {
       const kelas = document.getElementById('filterKelas').value;
       const tbody = document.getElementById('bodyTabelSiswa');
@@ -235,7 +227,7 @@
         return;
       }
 
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align: center;">🔄 Mengambil data murid kelas ${kelas}...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align: center;">🔄 Mengambil data master siswa kelas ${kelas}...</td></tr>`;
 
       fetch(BACKEND_URL, {
         method: 'POST',
@@ -244,8 +236,8 @@
       })
       .then(res => res.json())
       .then(data => {
-        if (!data || data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center;">Tidak ada data siswa terdaftar di kelas ini.</td></tr>`;
+        if (!data || data.length === 0 || data.error) {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center;">Tidak ada data siswa terdaftar di kelas ini atau sheet Data_Siswa kosong.</td></tr>`;
           return;
         }
 
@@ -270,11 +262,11 @@
         }).join('');
       })
       .catch(err => {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">Gagal memuat database siswa. Terjadi gangguan koneksi.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">Gagal memuat data siswa. Pastikan Web App Apps Script sudah di-deploy dengan benar.</td></tr>`;
       });
     }
 
-    // 3. Mengirimkan baris log baru (Append) ke Google Sheets
+    // Menambahkan baris log ke spreadsheet
     function eksekusiAbsenManual(idSiswa, nama, kelas) {
       const pilihanStatus = document.querySelector(`input[name="status_${idSiswa}"]:checked`).value;
       
@@ -285,7 +277,7 @@
         kelas: kelas,
         status: pilihanStatus,
         olehGuru: NAMA_GURU,
-        keterangan: "Input Manual (QR Code Error/Tertinggal)"
+        keterangan: "Manual"
       };
 
       fetch(BACKEND_URL, {
@@ -296,19 +288,19 @@
       .then(res => res.json())
       .then(res => {
         if(res.ok) {
-          alert(`Berhasil! Data log [${pilihanStatus}] untuk siswa ${nama} telah sukses ditambahkan ke Google Sheets.`);
+          alert(`Berhasil! Absensi [${pilihanStatus}] untuk ${nama} berhasil ditambahkan ke baris log.`);
         } else {
-          alert("Gagal memproses data: " + res.message);
+          alert("Gagal: " + res.message);
         }
       })
       .catch(err => {
         console.error(err);
-        alert("Terjadi kendala CORS/jaringan, namun instruksi data log manual dikirimkan. Silakan periksa spreadsheet Anda.");
+        alert("Gagal memproses data. Cek koneksi internet Anda.");
       });
     }
 
     function prosesLogout() {
-      if (confirm("Apakah Anda yakin ingin keluar dari Portal Guru?")) {
+      if (confirm("Apakah Anda yakin ingin keluar?")) {
         localStorage.clear();
         window.location.href = 'index.html';
       }
