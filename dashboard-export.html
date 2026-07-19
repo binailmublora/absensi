@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pusat Laporan & Export Data - E-Absensi</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Library Lembar Kerja Ekspor Excel SheetJS via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; --text-main: #2d3748; }
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); padding: 20px; color: var(--text-main); }
-    .container { max-width: 850px; margin: 0 auto; }
+    .container { max-width: 900px; margin: 0 auto; }
     .btn-back { text-decoration: none; color: var(--primary); font-weight: 600; font-size: 14px; display: inline-block; margin-bottom: 15px; }
     .card { background: var(--white); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
-    .box-flex { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
+    .box-flex { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 15px; }
+    .box-flex label { font-size: 12px; font-weight: 600; color: #64748b; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
     select, button { padding: 12px 16px; border-radius: 8px; font-size: 14px; }
-    select { border: 1px solid #dcdfdc; width: 180px; background: #fff; }
+    select { border: 1px solid #dcdfdc; width: 170px; background: #fff; }
     button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     button.btn-accent { background: var(--accent); }
     button:hover { opacity: 0.9; }
@@ -29,42 +30,73 @@
   <div class="container">
     <a href="#" class="btn-back" onclick="kembaliKeDashboard()">⬅️ Kembali ke Dashboard Utama</a>
     
-    <h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor</h1>
+    <h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor (Kustom Periode)</h1>
 
     <!-- BLOK 1: REKAPAN SISWA (UNTUK GURU & KEPSEK) -->
     <div class="card" id="aksesSiswa">
       <h2>1. Rekapan Absensi Siswa (Untuk Guru)</h2>
-      <p style="font-size: 13px; color: #64748b;">Pilih bulan dan kelas untuk memproses tabel rekapan absensi murid.</p>
+      <p style="font-size: 13px; color: #64748b;">Tentukan rentang periode bulan dan kelas pilihan untuk melihat akumulasi kehadiran murid.</p>
       <div class="box-flex">
-        <select id="bulanSiswa">
-          <option value="2026-07">Juli 2026</option>
-          <option value="2026-08">Agustus 2026</option>
-        </select>
-        <select id="kelasSiswa">
-          <option value="">Memuat kelas...</option>
-        </select>
-        <button onclick="prosesRekap('Siswa')">🔍 Tampilkan Data</button>
-        <button class="btn-accent" onclick="unduhExcel('Siswa')">📥 Unduh File Excel</button>
+        <div class="filter-group">
+          <label>Dari Bulan:</label>
+          <select id="bulanMulaiSiswa">
+            <option value="2026-07">Juli 2026</option>
+            <option value="2026-08">Agustus 2026</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Sampai Bulan:</label>
+          <select id="bulanSelesaiSiswa">
+            <option value="2026-07">Juli 2026</option>
+            <option value="2026-08" selected>Agustus 2026</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Pilih Kelas:</label>
+          <select id="kelasSiswa">
+            <option value="">Memuat kelas...</option>
+          </select>
+        </div>
+        <div class="filter-group" style="margin-top: 20px;">
+          <button onclick="prosesRekap('Siswa')">🔍 Tampilkan Data</button>
+        </div>
+        <div class="filter-group" style="margin-top: 20px;">
+          <button class="btn-accent" onclick="unduhExcel('Siswa')">📥 Unduh Excel</button>
+        </div>
       </div>
     </div>
 
     <!-- BLOK 2: REKAPAN GURU (KHUSUS KEPALA SEKOLAH) -->
     <div class="card" id="aksesKepsek" style="display:none;">
       <h2>2. Rekapan Komprehensif Absensi Guru (Untuk Kepala Sekolah)</h2>
-      <p style="font-size: 13px; color: #64748b;">Menu eksklusif Kepala Sekolah untuk merekap total kehadiran jam kerja guru.</p>
+      <p style="font-size: 13px; color: #64748b;">Menu eksklusif Kepala Sekolah untuk memantau performa kehadiran guru lintas bulan.</p>
       <div class="box-flex">
-        <select id="bulanGuru">
-          <option value="2026-07">Juli 2026</option>
-          <option value="2026-08">Agustus 2026</option>
-        </select>
-        <button onclick="prosesRekap('Guru')">🔍 Tampilkan Data</button>
-        <button class="btn-accent" onclick="unduhExcel('Guru')">📥 Unduh File Excel</button>
+        <div class="filter-group">
+          <label>Dari Bulan:</label>
+          <select id="bulanMulaiGuru">
+            <option value="2026-07">Juli 2026</option>
+            <option value="2026-08">Agustus 2026</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Sampai Bulan:</label>
+          <select id="bulanSelesaiGuru">
+            <option value="2026-07">Juli 2026</option>
+            <option value="2026-08" selected>Agustus 2026</option>
+          </select>
+        </div>
+        <div class="filter-group" style="margin-top: 20px;">
+          <button onclick="prosesRekap('Guru')">🔍 Tampilkan Data</button>
+        </div>
+        <div class="filter-group" style="margin-top: 20px;">
+          <button class="btn-accent" onclick="unduhExcel('Guru')">📥 Unduh Excel</button>
+        </div>
       </div>
     </div>
 
     <!-- Preview Tabel Sementara Sebelum Download -->
     <div class="card" id="boxPreview" style="display:none;">
-      <h3>Pratinjau Lembar Rekapan Data</h3>
+      <h3>Pratinjau Lembar Rekapan Data Laporan</h3>
       <div style="overflow-x: auto;">
         <table id="tabelPreview">
           <thead>
@@ -77,23 +109,18 @@
   </div>
 
   <script>
-    // URL Backend Web App Baru Sesuai Permintaan Anda
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzEo5ykovd6TkVW4hBqbUVBgKh4tL6-KvgiQmYLrZXuwKMqWPX0v6mHP5KqLnf9FbLnRA/exec";
     const ROLE = localStorage.getItem('user_role');
     let dataTerunduh = [];
 
-    // Hak Akses Kontrol Keamanan Halaman
-    if (!ROLE) { 
-      window.location.href = 'index.html'; 
-    }
-    if (ROLE === 'KepalaSekolah') { 
-      document.getElementById('aksesKepsek').style.display = 'block'; 
-    }
+    if (!ROLE) { window.location.href = 'index.html'; }
+    if (ROLE === 'KepalaSekolah') { document.getElementById('aksesKepsek').style.display = 'block'; }
 
-    // Mengambil Daftar Kelas Secara Dinamis dari Database Google Sheet
     function memuatDaftarKelasOtomatis() {
       fetch(BACKEND_URL, {
         method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getDaftarKelas' })
       })
       .then(res => res.json())
@@ -118,13 +145,30 @@
     }
 
     function prosesRekap(tipe) {
-      let payload = { action: 'getRekapanBulanan', tipe: tipe };
+      let bMulai, bSelesai, kelasPilihan = "";
+      
       if (tipe === 'Siswa') {
-        payload.bulan = document.getElementById('bulanSiswa').value;
-        payload.kelas = document.getElementById('kelasSiswa').value;
+        bMulai = document.getElementById('bulanMulaiSiswa').value;
+        bSelesai = document.getElementById('bulanSelesaiSiswa').value;
+        kelasPilihan = document.getElementById('kelasSiswa').value;
       } else {
-        payload.bulan = document.getElementById('bulanGuru').value;
+        bMulai = document.getElementById('bulanMulaiGuru').value;
+        bSelesai = document.getElementById('bulanSelesaiGuru').value;
       }
+
+      // Validasi logika urutan bulan agar tidak terbalik
+      if (bMulai > bSelesai) {
+        alert("Peringatan: Pilihan 'Dari Bulan' tidak boleh lebih maju daripada 'Sampai Bulan'!");
+        return;
+      }
+
+      let payload = { 
+        action: 'getRekapanBulanan', 
+        tipe: tipe, 
+        bulanMulai: bMulai, 
+        bulanSelesai: bSelesai, 
+        kelas: kelasPilihan 
+      };
 
       const table = document.getElementById('tabelPreview');
       const th = document.getElementById('thPreview');
@@ -132,51 +176,51 @@
 
       document.getElementById('boxPreview').style.display = 'block';
       table.style.display = 'none';
-      tb.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sedang memproses rekapan bulanan...</td></tr>';
+      tb.innerHTML = '<tr><td colspan="8" style="text-align:center;">Sedang memproses akumulasi rentang periode...</td></tr>';
 
-      fetch(BACKEND_URL, { method: 'POST', body: JSON.stringify(payload) })
+      fetch(BACKEND_URL, { 
+        method: 'POST', 
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload) 
+      })
       .then(res => res.json())
       .then(data => {
         dataTerunduh = data;
         table.style.display = 'table';
 
         if(!data.length) {
-          tb.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#64748b;">Data tidak ditemukan pada kombinasi bulan & kelas ini.</td></tr>';
+          tb.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#64748b;">Tidak ada data absensi pada rentang periode ini.</td></tr>';
           return;
         }
 
-        // Generate Header secara dinamis berdasarkan key objek JSON backend
         let keys = Object.keys(data[0]);
         th.innerHTML = keys.map(k => `<th>${k.replace(/_/g, ' ')}</th>`).join('');
         
-        // Generate Baris Isian Tabel
         tb.innerHTML = data.map(row => `
-          <tr>${keys.map(k => `<td>${row[k] !== undefined && row[k] !== null ? row[row[k] === true ? 'Ya' : k] : '-'}</td>`).join('')}</tr>
+          <tr>${keys.map(k => `<td>${row[k] !== undefined && row[k] !== null ? row[k] : '-'}</td>`).join('')}</tr>
         `).join('');
       })
       .catch(err => {
-        tb.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red;">Gagal mengambil data dari Google Sheet. Periksa koneksi atau URL Apps Script.</td></tr>';
+        tb.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Gagal memuat data lintas periode. Periksa koneksi backend Anda.</td></tr>`;
         console.error(err);
       });
     }
 
     function unduhExcel(tipe) {
       if(!dataTerunduh.length) { 
-        alert('Silakan klik tampilkan data terlebih dahulu sebelum mengunduh!'); 
+        alert('Silakan tampilkan data terlebih dahulu sebelum melakukan unduhan file!'); 
         return; 
       }
       
-      // Konversi JSON Array menjadi Worksheet SheetJS standar
       const worksheet = XLSX.utils.json_to_sheet(dataTerunduh);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Laporan");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Laporan Periode");
       
-      // Proses download file langsung ke perangkat komputer/HP
-      const namaFile = `Rekap_${tipe}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const namaFile = `Rekap_${tipe}_Periode_${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(workbook, namaFile);
     }
 
-    // Jalankan fungsi otomatis saat halaman terbuka pertama kali
     window.onload = function() {
       memuatDaftarKelasOtomatis();
     };
