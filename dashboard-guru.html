@@ -33,7 +33,7 @@
       margin-bottom: 25px; 
     }
     .header-portal h1 { margin: 0 0 10px 0; font-size: 28px; }
-    .header-portal p { margin: 0; font-size: 16px; opacity: 0.95; letter-spacing: 0.5px;}
+    .header-portal p { margin: 0; font-size: 16px; opacity: 0.95; font-weight: 500; }
     
     .btn-logout { 
       background: var(--accent); 
@@ -83,7 +83,7 @@
       border: 1px solid #e2e8f0; background: white;
     }
     
-    .radio-label input[value="Masuk"]:checked + span { color: #155724; font-weight: bold; }
+    .radio-label input[value="Masuk"]:checked + span { color: #0f5132; font-weight: bold; }
     .radio-label input[value="Sakit"]:checked + span { color: #b45309; font-weight: bold; }
     .radio-label input[value="Izin"]:checked + span { color: #1d4ed8; font-weight: bold; }
     .radio-label input[value="Alpha"]:checked + span { color: #b91c1c; font-weight: bold; }
@@ -104,12 +104,12 @@
 <body>
 
   <div class="container">
-    <!-- Topbar -->
+    <!-- Header Topbar -->
     <div class="header-portal">
       <div>
         <h1>Portal Akademik Sekolah</h1>
-        <!-- Bagian ini akan diisi teks sapaan secara dinamis -->
-        <p><span id="teksSapaanUser">⏳ Memeriksa sesi login...</span></p>
+        <!-- Scriptlet menyuntikkan sapaan instan langsung dari server -->
+        <p><strong><?= sapaanLengkap ?></strong></p>
       </div>
       <button class="btn-logout" onclick="prosesLogout()">Keluar 🚪</button>
     </div>
@@ -184,29 +184,8 @@
   </div>
 
   <script>
-    // Menyimpan nama user global untuk keperluan log pencatatan absensi
-    let NAMA_USER_GLOBAL = "Guru / Staf";
-
-    // Fungsi 1: Validasi User Login & Tampilkan Sapaan Khusus
-    function inisialisasiSapaanUser() {
-      // Mengirimkan nama file saat ini ke server untuk mencocokkan Role (Guru/Kepsek/OrangTua)
-      const namaHalamanIni = "DashboardGuru"; 
-
-      google.script.run
-        .withSuccessHandler(function(res) {
-          if(res && res.teksSapaan) {
-            document.getElementById('teksSapaanUser').innerText = res.teksSapaan;
-            NAMA_USER_GLOBAL = res.namaLengkap;
-          }
-          // Setelah nama user sukses termuat, jalankan pengambilan kelas
-          ambilDaftarKelasDashboard();
-        })
-        .withFailureHandler(function() {
-          document.getElementById('teksSapaanUser').innerText = "Ahlan wa sahlan, Pengguna";
-          ambilDaftarKelasDashboard();
-        })
-        .getUserLoginData(namaHalamanIni);
-    }
+    // Mengambil nama user langsung lewat Scriptlet server untuk log 'DICATAT OLEH'
+    const NAMA_USER_GLOBAL = "<?= namaHanya ?>";
 
     // Fungsi Navigasi Tab Halaman
     function switchTab(tabId) {
@@ -230,16 +209,16 @@
             selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
               classList.map(k => `<option value="${k}">${k}</option>`).join('');
           } else {
-            selectKelas.innerHTML = '<option value="">Data kosong / Sheet tidak ditemukan</option>';
+            selectKelas.innerHTML = '<option value="">Data kelas tidak ditemukan</option>';
           }
         })
         .withFailureHandler(function() {
-          selectKelas.innerHTML = '<option value="">Gagal memuat data kelas</option>';
+          selectKelas.innerHTML = '<option value="">Gagal memuat daftar kelas</option>';
         })
         .ambilDaftarKelasInternal();
     }
 
-    // Fungsi Load Siswa
+    // Fungsi Load Master Siswa
     function muatMasterSiswa() {
       const kelas = document.getElementById('filterKelas').value;
       const tbody = document.getElementById('bodyTabelSiswa');
@@ -250,7 +229,7 @@
       google.script.run
         .withSuccessHandler(function(data) {
           if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 20px;">Tidak ada data siswa.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 20px;">Tidak ada data siswa di kelas ini.</td></tr>`;
             return;
           }
           tbody.innerHTML = data.map(siswa => `
@@ -274,7 +253,7 @@
         .getDaftarSiswaServer(kelas);
     }
 
-    // Fungsi Simpan Absen
+    // Fungsi Simpan Absen Manual Ke Sheet
     function eksekusiAbsenManual(idSiswa, nama, kelas) {
       const pilihanStatus = document.querySelector(`input[name="status_${idSiswa}"]:checked`).value;
       const tombolSimpan = document.getElementById(`btn_${idSiswa}`);
@@ -296,9 +275,9 @@
           if (res && res.ok) {
             alert(`Sukses mencatat status [${pilihanStatus}] untuk ${nama}.`);
             tombolSimpan.innerText = "Tersimpan ✓";
-            tombolSimpan.style.background = "#155724";
+            tombolSimpan.style.background = "#0f5132";
           } else {
-            alert("Gagal menyimpan data.");
+            alert("Gagal menyimpan data ke Spreadsheet.");
             tombolSimpan.disabled = false;
             tombolSimpan.innerText = "Simpan";
           }
@@ -306,7 +285,7 @@
         .simpanAbsenManualServer(payload);
     }
 
-    // Fungsi Tampilkan Rekapan
+    // Fungsi Mengambil Data Rekapan
     function muatRekapAbsensi() {
       const tbody = document.getElementById('bodyTabelRekap');
       tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">🔄 Memuat data riwayat log absensi...</td></tr>`;
@@ -314,7 +293,7 @@
       google.script.run
         .withSuccessHandler(function(logs) {
           if (!logs || logs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">Belum ada log absensi terinput.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">Belum ada log absensi terinput di sheet Log_Absensi.</td></tr>`;
             return;
           }
           tbody.innerHTML = logs.map(log => `
@@ -328,19 +307,22 @@
             </tr>
           `).join('');
         })
+        .withFailureHandler(function() {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 20px;">Gagal mengambil data dari sheet Log_Absensi.</td></tr>`;
+        })
         .ambilLogAbsensiRekap();
     }
 
-    // Fungsi Keluar/Logout Resmi (Iframe Parent Safe)
+    // Fungsi Tombol Keluar / Logout Aman
     function prosesLogout() {
-      if (confirm("Apakah Anda yakin ingin keluar dari Halaman Portal Akademik ini?")) {
+      if (confirm("Apakah Anda yakin ingin keluar dari Portal Akademik ini?")) {
         window.top.location.href = "https://www.google.com";
       }
     }
 
-    // Eksekusi inisialisasi user login saat halaman dimuat pertama kali
+    // Eksekusi load awal aplikasi
     window.onload = function() {
-      inisialisasiSapaanUser();
+      ambilDaftarKelasDashboard();
     };
   </script>
 </body>
