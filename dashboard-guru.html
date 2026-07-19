@@ -3,28 +3,320 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Akademik Sekolah</title>
+  <title>Dashboard Guru - E-Absensi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #f4f7f5;
+    :root {
+      --primary: #0f5132;
+      --accent: #e5a93b;
+      --bg: #f4f7f5;
+      --text-main: #1e293b;
+      --white: #ffffff;
+      --danger: #dc3545;
+      --success: #198754;
+      --warning: #ffc107;
+      --info: #0dcaf0;
     }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background: var(--bg); 
+      color: var(--text-main); 
+      padding: 20px; 
     }
+    
+    .container { max-width: 950px; margin: 0 auto; }
+    
+    .header { 
+      background: var(--primary); 
+      color: white; 
+      padding: 24px; 
+      border-radius: 16px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      border-bottom: 4px solid var(--accent); 
+    }
+    
+    .card {
+      background: var(--white);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+      margin-bottom: 20px;
+    }
+
+    .filter-panel {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 20px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label { font-size: 12px; font-weight: 600; color: #64748b; }
+    select, input[type="date"], button { padding: 10px 14px; border-radius: 8px; font-size: 14px; border: 1px solid #dcdfdc; }
+    
+    button { 
+      background: var(--primary); 
+      color: white; 
+      border: none; 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    button.btn-save { background: var(--success); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px; border-bottom: 1px solid #edf2f0; font-size: 14px; text-align: left; }
+    th { background: #f8faf9; color: var(--primary); font-weight: 600; }
+    
+    .select-status {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      width: 110px;
+    }
+    .status-H { background-color: #e2f0d9; color: #155724; border-color: #c3e6cb; }
+    .status-S { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
+    .status-I { background-color: #cff4fc; color: #055160; border-color: #b6effb; }
+    .status-A { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+
+    .action-panel { text-align: center; padding: 16px; background: var(--white); border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .btn-nav { background: var(--primary); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; display: inline-block; }
   </style>
 </head>
 <body>
+  <div class="container">
+    
+    <!-- Topbar Header -->
+    <div class="header">
+      <div>
+        <h1>Dashboard Guru</h1>
+        <!-- Teks sapaan telah diperbarui menjadi Ahlan wa sahlan -->
+        <p>Ahlan wa sahlan, <strong id="namaUser">...</strong></p> 
+      </div>
+      <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
+    </div>
 
-  <!-- TEMPELKAN URL WEB APP GOOGLE (/exec) ANDA DI BAWAH INI -->
-  <iframe src="https://script.google.com/macros/s/AKfycbx6nGqir1Ih8JzmELhUtke1JpNXVYB6oaIexMCsEQAKgmHMlnINg2V33rlw55oC6q4awA/exec"></iframe>
+    <!-- Blok Manajemen Absensi Siswa -->
+    <div class="card">
+      <h2>📝 Pencatatan & Perubahan Absensi Siswa</h2>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Pilih tanggal dan kelas yang dituju untuk mengelola data absensi siswa.</p>
+      
+      <div class="filter-panel">
+        <div class="filter-group">
+          <label>Pilih Tanggal:</label>
+          <input type="date" id="tglAbsensi">
+        </div>
+        <div class="filter-group">
+          <label>Pilih Kelas:</label>
+          <select id="kelasSiswa">
+            <option value="">Memuat daftar kelas...</option>
+          </select>
+        </div>
+        <button onclick="muatDataAbsensiSiswa()">🔍 Cari Siswa</button>
+        <button class="btn-save" id="btnSimpan" onclick="simpanPerubahanAbsensi()" style="display:none;">💾 Simpan Perubahan</button>
+      </div>
 
+      <!-- Tabel Input & Edit Absensi -->
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 8%;">No</th>
+              <th style="width: 25%;">NISN</th>
+              <th style="width: 42%;">Nama Lengkap</th>
+              <th style="width: 25%;">Status Kehadiran</th>
+            </tr>
+          </thead>
+          <tbody id="tabelSiswaBody">
+            <tr><td colspan="4" style="text-align:center; color: #64748b; padding: 20px;">Silakan tentukan tanggal dan kelas terlebih dahulu.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panel Menu Rekapan Sesuai Batasan Peran (Role) -->
+    <div class="action-panel">
+      <a href="https://binailmublora.github.io/absensi/dashboard-export.html" target="_top" class="btn-nav">📊 Buka Menu Rekapan & Export</a>
+    </div>
+
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxY9qzNdXcLt-7arlJNuoKF_48zqS6UNPRXlNs_mefkEiIJN5YyZa7VUiTO9EL6MSvRSQ/exec";
+    const ROLE = localStorage.getItem('user_role');
+
+    if (!localStorage.getItem('auth_token') || (ROLE !== 'Guru' && ROLE !== 'KepalaSekolah')) {
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('namaUser').textContent = localStorage.getItem('user_nama');
+
+    function setHariIni() {
+      const hariIni = new Date();
+      const formatHariIni = `${hariIni.getFullYear()}-${String(hariIni.getMonth() + 1).padStart(2, '0')}-${String(hariIni.getDate()).padStart(2, '0')}`;
+      document.getElementById('tglAbsensi').value = formatHariIni;
+    }
+
+    function memuatDaftarKelasOtomatis() {
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getDaftarKelas' })
+      })
+      .then(res => res.json())
+      .then(res => {
+        const selectKelas = document.getElementById('kelasSiswa');
+        if (res && res.ok && res.kelas && res.kelas.length > 0) {
+          selectKelas.innerHTML = res.kelas.map(kls => `<option value="${kls}">${kls}</option>`).join('');
+        } else {
+          selectKelas.innerHTML = `<option value="">Tidak ada kelas tersedia</option>`;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('kelasSiswa').innerHTML = `<option value="">Gagal sinkronisasi data kelas</option>`;
+      });
+    }
+
+    function muatDataAbsensiSiswa() {
+      const tgl = document.getElementById('tglAbsensi').value;
+      const kelas = document.getElementById('kelasSiswa').value;
+      const tbody = document.getElementById('tabelSiswaBody');
+
+      if(!tgl || !kelas) {
+        alert("Mohon tentukan pilihan tanggal dan kelas!");
+        return;
+      }
+
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">🔄 Menghubungkan ke server spreadsheet...</td></tr>';
+      document.getElementById('btnSimpan').style.display = 'none';
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'getAbsensiSiswaPerHari',
+          tanggal: tgl,
+          kelas: kelas,
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(!data || !data.ok || !data.siswa || data.siswa.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Belum ada data siswa dimasukkan pada kelas ini.</td></tr>';
+          return;
+        }
+
+        document.getElementById('btnSimpan').style.display = 'inline-block';
+        
+        tbody.innerHTML = data.siswa.map((mhs, index) => {
+          let st = mhs.status ? mhs.status.toUpperCase() : "H";
+          if(st === "HADIR") st = "H";
+          if(st === "SAKIT") st = "S";
+          if(st === "IZIN" || st === "IJIN") st = "I";
+          if(st === "ALPHA" || st === "ALFA") st = "A";
+
+          return `
+            <tr data-nisn="${mhs.nisn}">
+              <td>${index + 1}</td>
+              <td><strong>${mhs.nisn}</strong></td>
+              <td>${mhs.nama}</td>
+              <td>
+                <select class="select-status status-${st}" onchange="updateWarnaDropdown(this)">
+                  <option value="H" ${st === 'H' ? 'selected' : ''}>H (Hadir)</option>
+                  <option value="S" ${st === 'S' ? 'selected' : ''}>S (Sakit)</option>
+                  <option value="I" ${st === 'I' ? 'selected' : ''}>I (Izin)</option>
+                  <option value="A" ${st === 'A' ? 'selected' : ''}>A (Alpha)</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      })
+      .catch(err => {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">❌ Terjadi kesalahan sinkronisasi data server.</td></tr>';
+      });
+    }
+
+    function updateWarnaDropdown(el) {
+      el.className = `select-status status-${el.value}`;
+    }
+
+    function simpanPerubahanAbsensi() {
+      const tgl = document.getElementById('tglAbsensi').value;
+      const kelas = document.getElementById('kelasSiswa').value;
+      const barisTabel = document.querySelectorAll('#tabelSiswaBody tr');
+      
+      let dataPresensi = [];
+      barisTabel.forEach(tr => {
+        const nisn = tr.getAttribute('data-nisn');
+        const status = tr.querySelector('.select-status')?.value;
+        if(nisn && status) {
+          dataPresensi.push({ nisn: nisn, status: status });
+        }
+      });
+
+      if(dataPresensi.length === 0) return;
+
+      const btn = document.getElementById('btnSimpan');
+      btn.disabled = true;
+      btn.textContent = "⌛ Menyimpan...";
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'simpanAbsensiSiswa',
+          tanggal: tgl,
+          kelas: kelas,
+          data: dataPresensi,
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan Perubahan";
+        if(res.ok) {
+          alert("✓ Data absensi siswa berhasil diperbarui ke Google Sheets!");
+          muatDataAbsensiSiswa();
+        } else {
+          alert("Gagal menyimpan: " + res.message);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan Perubahan";
+        alert("❌ Putus koneksi server. Gagal memperbarui data.");
+      });
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'index.html';
+    }
+
+    window.onload = function() {
+      setHariIni();
+      memuatDaftarKelasOtomatis();
+    };
+  </script>
 </body>
 </html>
