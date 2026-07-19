@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <base target="_top">
-  <!-- Menyertakan style global dari project Apps Script Anda -->
-  <?!= include('Style'); ?>
-  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Kepala Sekolah - E-Absensi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary: #0f5132;
@@ -77,6 +77,7 @@
       font-weight: 600; 
       display: inline-block; 
       transition: background 0.2s;
+      cursor: pointer;
     }
     
     .btn-nav:hover { background: #0b3d26; }
@@ -85,85 +86,111 @@
 <body>
   <div class="container">
     
-    <!-- Topbar Header Dashboard -->
+    <!-- Header Terisi Otomatis Menggunakan localStorage -->
     <div class="header">
       <div>
         <h1>Dashboard Kepala Sekolah</h1>
-        <!-- Mengambil nama user secara dinamis dari Apps Script server-side -->
-        <p>Selamat Datang, <strong><?= user.nama ?></strong></p> 
+        <p>Selamat Datang, <strong id="namaUser">...</strong></p> 
       </div>
+      <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
     </div>
-
-    <!-- Navigasi Utama Otomatis Internal -->
-    <?!= navHtml ?>
-    <br>
 
     <!-- 4 Blok Rangkuman Utama Presensi Hari Ini -->
     <div class="grid-stats">
       <!-- 1. Ringkasan Guru Hadir -->
       <div class="card-stat success-card">
         <h3>Guru Hadir</h3>
-        <p id="guruHadir">-</p>
+        <p id="guruHadir">🔄</p>
         <div class="detail-text">Sudah melakukan absensi masuk</div>
       </div>
       
       <!-- 2. Ringkasan Guru Tidak Hadir -->
       <div class="card-stat alert-card">
         <h3>Guru Absen/Alfa</h3>
-        <p id="guruAbsen" style="color: var(--danger);">-</p>
+        <p id="guruAbsen" style="color: var(--danger);">🔄</p>
         <div class="detail-text" id="detailGuruTidakHadir">Memuat data keterangan...</div>
       </div>
       
       <!-- 3. Ringkasan Siswa Hadir -->
       <div class="card-stat success-card">
         <h3>Siswa Hadir</h3>
-        <p id="siswaHadir">-</p>
+        <p id="siswaHadir">🔄</p>
         <div class="detail-text">Total dari seluruh kelas</div>
       </div>
       
       <!-- 4. Ringkasan Siswa Tidak Hadir -->
       <div class="card-stat alert-card">
         <h3>Siswa Absen/Alfa</h3>
-        <p id="siswaAbsen" style="color: var(--danger);">-</p>
+        <p id="siswaAbsen" style="color: var(--danger);">🔄</p>
         <div class="detail-text" id="detailSiswaTidakHadir">Memuat data keterangan...</div>
       </div>
     </div>
 
-    <!-- Panel Menu Rekapan Menuju GitHub Pages (Tab yang Sama) -->
+    <!-- Panel Menu Rekapan Menuju Halaman GitHub Pages Anda (Tab yang Sama) -->
     <div class="action-panel">
-      <!-- target="_top" memaksa window utama keluar dari iFrame dan pindah ke link tujuan -->
       <a href="https://binailmublora.github.io/absensi/dashboard-export.html" target="_top" class="btn-nav">📊 Buka Menu Rekapan & Export</a>
     </div>
 
   </div>
 
   <script>
-    // Token dilempar langsung lewat backend doGet() di code.gs
-    const TOKEN = "<?= token ?>";
+    // URL Backend disamakan persis dengan yang ada di dashboard-export.html Anda
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxY9qzNdXcLt-7arlJNuoKF_48zqS6UNPRXlNs_mefkEiIJN5YyZa7VUiTO9EL6MSvRSQ/exec";
+    
+    // Proteksi Validasi Login berbasis LocalStorage
+    if (!localStorage.getItem('auth_token') || localStorage.getItem('user_role') !== 'KepalaSekolah') {
+      window.location.href = 'index.html';
+    }
+    
+    // Set Nama Pengguna Secara Instan dari LocalStorage browser
+    document.getElementById('namaUser').textContent = localStorage.getItem('user_nama');
 
     function ambilDataKepsek() {
-      // Memanggil fungsi server Apps Script secara asinkron tanpa fetch eksternal
-      google.script.run
-        .withSuccessHandler(function(data) {
-          if(data) {
-            // Pasang angka statistik utama
-            document.getElementById('guruHadir').textContent = data.stats.guruHadir;
-            document.getElementById('guruAbsen').textContent = data.stats.guruAbsen;
-            document.getElementById('siswaHadir').textContent = data.stats.siswaHadir;
-            document.getElementById('siswaAbsen').textContent = data.stats.siswaAbsen;
-            
-            // Tampilkan detail keterangan alasan tidak hadir jika ada
-            document.getElementById('detailGuruTidakHadir').innerHTML = data.details.guruKeterangan || "Semua staf terabsen.";
-            document.getElementById('detailSiswaTidakHadir').innerHTML = data.details.siswaKeterangan || "Tidak ada siswa absen.";
-          }
+      // Menggunakan fetch POST dengan mode cors ke Google Apps Script backend Anda
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ 
+          action: 'getDataKepsek',
+          token: localStorage.getItem('auth_token') 
         })
-        .withFailureHandler(function(err) {
-          console.error("Gagal memuat data dari spreadsheet: ", err);
-        })
-        .getDataKombinasiKepsek(TOKEN); // Fungsi pembaca statistik di GS Anda
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Respons server bermasalah");
+        return res.json();
+      })
+      .then(data => {
+        if(data && data.stats) {
+          // Masukkan angka statistik ke dalam komponen card
+          document.getElementById('guruHadir').textContent = data.stats.guruHadir || "0";
+          document.getElementById('guruAbsen').textContent = data.stats.guruAbsen || "0";
+          document.getElementById('siswaHadir').textContent = data.stats.siswaHadir || "0";
+          document.getElementById('siswaAbsen').textContent = data.stats.siswaAbsen || "0";
+          
+          // Masukkan ringkasan teks keterangan (alasan) jika disediakan oleh backend Anda
+          document.getElementById('detailGuruTidakHadir').innerHTML = data.details?.guruKeterangan || "Semua staf terabsen.";
+          document.getElementById('detailSiswaTidakHadir').innerHTML = data.details?.siswaKeterangan || "Tidak ada siswa absen.";
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        // Tampilkan indikator error pada kartu jika koneksi gagal
+        document.getElementById('guruHadir').textContent = "⚠️";
+        document.getElementById('guruAbsen').textContent = "⚠️";
+        document.getElementById('siswaHadir').textContent = "⚠️";
+        document.getElementById('siswaAbsen').textContent = "⚠️";
+        document.getElementById('detailGuruTidakHadir').textContent = "Gagal memuat data dari spreadsheet.";
+        document.getElementById('detailSiswaTidakHadir').textContent = "Gagal memuat data dari spreadsheet.";
+      });
     }
 
-    // Jalankan penarikan data presensi saat dokumen selesai dimuat
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'index.html';
+    }
+
+    // Eksekusi fungsi penarikan data ketika window selesai dimuat
     window.onload = ambilDataKepsek;
   </script>
 </body>
