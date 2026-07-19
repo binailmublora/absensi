@@ -175,7 +175,7 @@
   </div>
 
   <script>
-    // URL Web App Apps Script Baru
+    // URL Web App Apps Script Utama
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxQXkk6c0qjy83z2nTjh3spndGokov2cPsTeBJXuUupDnfxpJkmYuND9bQwEXLdljDqMw/exec";
     
     const NAMA_GURU = localStorage.getItem('user_nama') || "Guru Pengajar";
@@ -188,32 +188,27 @@
 
     document.getElementById('namaGuruTampilan').innerText = NAMA_GURU;
 
-    // Load Dropdown Kelas awal
+    // Load Dropdown Kelas awal menggunakan POST bypass CORS
     function ambilDaftarKelasDashboard() {
-      fetch(`${BACKEND_URL}?action=getDaftarKelas`)
+      const selectKelas = document.getElementById('filterKelas');
+      
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getDaftarKelas' })
+      })
       .then(res => res.json())
       .then(res => {
-        if (res.kelas) {
-          const selectKelas = document.getElementById('filterKelas');
+        if (res && res.kelas && res.kelas.length > 0) {
           selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
             res.kelas.map(k => `<option value="${k}">${k}</option>`).join('');
+        } else {
+          selectKelas.innerHTML = '<option value="">Gagal memuat daftar / Kelas Kosong</option>';
         }
       })
       .catch(err => {
-        // Fallback jika GET terkena CORS browser
-        fetch(BACKEND_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'getDaftarKelas' })
-        })
-        .then(r => r.json())
-        .then(r => {
-          if (r.kelas) {
-            const selectKelas = document.getElementById('filterKelas');
-            selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
-              r.kelas.map(k => `<option value="${k}">${k}</option>`).join('');
-          }
-        });
+        console.error("Error memuat kelas:", err);
+        selectKelas.innerHTML = '<option value="">Gagal memuat data (Cek Apps Script)</option>';
       });
     }
 
