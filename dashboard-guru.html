@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Akademik Guru - Input Absensi Manual</title>
+  <title>Portal Academic Guru - Input Absensi Manual</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root { 
@@ -175,8 +175,8 @@
   </div>
 
   <script>
-    // URL Web App Apps Script Utama
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxQXkk6c0qjy83z2nTjh3spndGokov2cPsTeBJXuUupDnfxpJkmYuND9bQwEXLdljDqMw/exec";
+    // ⚠️ MASUKKAN URL WEB APP ANDA YANG BARU DI SINI:
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxo84WyHTnUngVSgeJ8QNYEI8ZrcguVX7y1ImUfFu7XWfqO7X_NPgpTqPKEY75_67215w/exec";
     
     const NAMA_GURU = localStorage.getItem('user_nama') || "Guru Pengajar";
     const ROLE = localStorage.getItem('user_role');
@@ -188,7 +188,7 @@
 
     document.getElementById('namaGuruTampilan').innerText = NAMA_GURU;
 
-    // Load Dropdown Kelas awal menggunakan POST bypass CORS
+    // Load Dropdown Kelas awal (POST Bypass CORS)
     function ambilDaftarKelasDashboard() {
       const selectKelas = document.getElementById('filterKelas');
       
@@ -199,6 +199,11 @@
       })
       .then(res => res.json())
       .then(res => {
+        if (res && res.error) {
+          selectKelas.innerHTML = `<option value="">Error: ${res.error}</option>`;
+          return;
+        }
+        
         if (res && res.kelas && res.kelas.length > 0) {
           selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>' + 
             res.kelas.map(k => `<option value="${k}">${k}</option>`).join('');
@@ -231,7 +236,12 @@
       })
       .then(res => res.json())
       .then(data => {
-        if (!data || data.length === 0 || data.error) {
+        if (data && data.error) {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">Error: ${data.error}</td></tr>`;
+          return;
+        }
+
+        if (!data || data.length === 0) {
           tbody.innerHTML = `<tr><td colspan="3" style="text-align: center;">Tidak ada data siswa terdaftar di kelas ini atau sheet Data_Siswa kosong.</td></tr>`;
           return;
         }
