@@ -5,38 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pusat Laporan & Export Data - E-Absensi</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Library Lembar Kerja Ekspor Excel SheetJS via CDN -->
+  <!-- Library Ekspor Excel SheetJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; --text-main: #2d3748; }
     body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); padding: 20px; color: var(--text-main); }
-    .container { max-width: 900px; margin: 0 auto; }
+    .container { max-width: 1000px; margin: 0 auto; }
     .btn-back { text-decoration: none; color: var(--primary); font-weight: 600; font-size: 14px; display: inline-block; margin-bottom: 15px; }
     .card { background: var(--white); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
     .box-flex { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 15px; }
     .box-flex label { font-size: 12px; font-weight: 600; color: #64748b; }
     .filter-group { display: flex; flex-direction: column; gap: 4px; }
     select, button { padding: 12px 16px; border-radius: 8px; font-size: 14px; }
-    select { border: 1px solid #dcdfdc; width: 170px; background: #fff; }
+    select { border: 1px solid #dcdfdc; width: 175px; background: #fff; }
     button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     button.btn-accent { background: var(--accent); }
     button:hover { opacity: 0.9; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; display: none; }
-    th, td { padding: 12px 10px; border: 1px solid #e2e8f0; font-size: 13px; text-align: left; }
-    th { background: #f8fafc; color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 12px; }
+    th, td { padding: 10px 8px; border: 1px solid #e2e8f0; font-size: 12px; text-align: left; white-space: nowrap; }
+    th { background: #f8fafc; color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 11px; }
     tr:nth-child(even) { background-color: #f8fafc; }
+    
+    /* Pewarnaan Status Dinamis untuk Matriks */
+    .st-masuk { color: #155724; font-weight: bold; background-color: #e2f0d9; text-align: center; }
+    .st-sakit { color: #856404; font-weight: bold; background-color: #fff3cd; text-align: center; }
+    .st-alpha { color: #721c24; font-weight: bold; background-color: #f8d7da; text-align: center; }
+    .st-belum { color: #94a3b8; font-style: italic; background-color: #f1f5f9; text-align: center; }
   </style>
 </head>
 <body>
   <div class="container">
     <a href="#" class="btn-back" onclick="kembaliKeDashboard()">⬅️ Kembali ke Dashboard Utama</a>
     
-    <h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor (Kustom Periode)</h1>
+    <h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor (Matriks Periode)</h1>
 
-    <!-- BLOK 1: REKAPAN SISWA (UNTUK GURU & KEPSEK) -->
+    <!-- BLOK 1: REKAPAN SISWA -->
     <div class="card" id="aksesSiswa">
-      <h2>1. Rekapan Absensi Siswa (Untuk Guru)</h2>
-      <p style="font-size: 13px; color: #64748b;">Tentukan rentang periode bulan dan kelas pilihan untuk melihat akumulasi kehadiran murid.</p>
+      <h2>1. Rekapan Absensi Siswa Berdasarkan Kelas & Tanggal</h2>
+      <p style="font-size: 13px; color: #64748b;">Tampilkan seluruh nama siswa di kelas terpilih lengkap dengan rincian status per tanggal aktif.</p>
       <div class="box-flex">
         <div class="filter-group">
           <label>Dari Bulan:</label>
@@ -58,19 +64,19 @@
             <option value="">Memuat kelas...</option>
           </select>
         </div>
-        <div class="filter-group" style="margin-top: 20px;">
+        <div class="filter-group" style="margin-top: 18px;">
           <button onclick="prosesRekap('Siswa')">🔍 Tampilkan Data</button>
         </div>
-        <div class="filter-group" style="margin-top: 20px;">
+        <div class="filter-group" style="margin-top: 18px;">
           <button class="btn-accent" onclick="unduhExcel('Siswa')">📥 Unduh Excel</button>
         </div>
       </div>
     </div>
 
-    <!-- BLOK 2: REKAPAN GURU (KHUSUS KEPALA SEKOLAH) -->
+    <!-- BLOK 2: REKAPAN GURU -->
     <div class="card" id="aksesKepsek" style="display:none;">
-      <h2>2. Rekapan Komprehensif Absensi Guru (Untuk Kepala Sekolah)</h2>
-      <p style="font-size: 13px; color: #64748b;">Menu eksklusif Kepala Sekolah untuk memantau performa kehadiran guru lintas bulan.</p>
+      <h2>2. Rekapan Komprehensif Kehadiran Guru</h2>
+      <p style="font-size: 13px; color: #64748b;">Menu eksklusif Kepala Sekolah untuk memantau performa dan tanggal masuk kerja guru.</p>
       <div class="box-flex">
         <div class="filter-group">
           <label>Dari Bulan:</label>
@@ -86,18 +92,18 @@
             <option value="2026-08" selected>Agustus 2026</option>
           </select>
         </div>
-        <div class="filter-group" style="margin-top: 20px;">
+        <div class="filter-group" style="margin-top: 18px;">
           <button onclick="prosesRekap('Guru')">🔍 Tampilkan Data</button>
         </div>
-        <div class="filter-group" style="margin-top: 20px;">
+        <div class="filter-group" style="margin-top: 18px;">
           <button class="btn-accent" onclick="unduhExcel('Guru')">📥 Unduh Excel</button>
         </div>
       </div>
     </div>
 
-    <!-- Preview Tabel Sementara Sebelum Download -->
+    <!-- Preview Tabel Matriks Harian -->
     <div class="card" id="boxPreview" style="display:none;">
-      <h3>Pratinjau Lembar Rekapan Data Laporan</h3>
+      <h3>Pratinjau Lembar Rekapan Data Harian</h3>
       <div style="overflow-x: auto;">
         <table id="tabelPreview">
           <thead>
@@ -110,12 +116,12 @@
   </div>
 
   <script>
-    // URL Web App Google Apps Script Terbaru Anda
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbw4LIlo4_coYlzDvgwMGN76lreaSi0Q9stIo1iCF69blImHpngzt8RB7tp7cwbMEtfYqg/exec";
+    // URL Web App Google Apps Script Sesuai Permintaan Anda
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzEgsh-HVj0Y7xWzTbKwFLkI7F-JU3iEX6MhQqwkwQHRfFbM8V8TMENF-jM20ubQOsYmA/exec";
     const ROLE = localStorage.getItem('user_role');
     let dataTerunduh = [];
 
-    // Proteksi Keamanan Halaman
+    // Proteksi Hak Akses Halaman
     if (!ROLE) { 
       window.location.href = 'index.html'; 
     }
@@ -141,7 +147,7 @@
         }
       })
       .catch(err => {
-        console.error("Error sinkronisasi kelas:", err);
+        console.error("Gagal sinkronisasi daftar kelas:", err);
         document.getElementById('kelasSiswa').innerHTML = `<option value="">Error Database</option>`;
       });
     }
@@ -164,9 +170,9 @@
         bSelesai = document.getElementById('bulanSelesaiGuru').value;
       }
 
-      // Validasi logika urutan bulan agar tidak terbalik
+      // Validasi urutan pilihan bulan
       if (bMulai > bSelesai) {
-        alert("Peringatan: Pilihan 'Dari Bulan' tidak boleh lebih maju daripada 'Sampai Bulan'!");
+        alert("Peringatan: Pilihan 'Dari Bulan' tidak boleh melebihi 'Sampai Bulan'!");
         return;
       }
 
@@ -182,10 +188,9 @@
       const th = document.getElementById('thPreview');
       const tb = document.getElementById('tbPreview');
 
-      // Tampilkan kontainer pratinjau dan set status loading
       document.getElementById('boxPreview').style.display = 'block';
       table.style.display = 'none';
-      tb.innerHTML = '<tr><td style="text-align:center; padding:20px;">🔄 Sedang memproses akumulasi rentang periode...</td></tr>';
+      tb.innerHTML = '<tr><td style="text-align:center; padding:20px;">🔄 Menggabungkan data absen harian ke memori web...</td></tr>';
 
       fetch(BACKEND_URL, { 
         method: 'POST', 
@@ -193,13 +198,10 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload) 
       })
-      .then(res => {
-        if (!res.ok) throw new Error("Respons jaringan bermasalah (HTTP " + res.status + ")");
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
         if (!data || !Array.isArray(data) || data.length === 0) {
-          tb.innerHTML = '<tr><td style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ditemukan data absensi pada rentang periode bulan ini.</td></tr>';
+          tb.innerHTML = '<tr><td style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ditemukan rekapan data absensi pada periode kelas ini.</td></tr>';
           dataTerunduh = [];
           return;
         }
@@ -207,42 +209,43 @@
         dataTerunduh = data;
         table.style.display = 'table';
 
-        // Ambil struktur nama kolom (key) secara dinamis dari objek pertama array JSON
+        // Mendeteksi nama kolom (keys) secara dinamis termasuk kolom-kolom tanggal harian
         let keys = Object.keys(data[0]);
+        th.innerHTML = keys.map(k => `<th>${k}</th>`).join('');
         
-        // Render judul header tabel (mengubah underscore menjadi spasi)
-        th.innerHTML = keys.map(k => `<th>${k.replace(/_/g, ' ').toUpperCase()}</th>`).join('');
-        
-        // Render baris data ke dalam tabel preview
+        // Render baris data dengan class warna status otomatis
         tb.innerHTML = data.map(row => {
           return `<tr>${keys.map(k => {
-            let nilaiSel = row[k];
-            if (nilaiSel === undefined || nilaiSel === null) nilaiSel = '-';
-            return `<td>${nilaiSel}</td>`;
+            let cell = row[k] !== undefined && row[k] !== null ? String(row[k]) : '-';
+            let classWarna = "";
+            
+            // Logika styling CSS teks cell berdasarkan status absensi harian
+            if (cell.toLowerCase() === "masuk") classWarna = 'class="st-masuk"';
+            else if (cell.toLowerCase() === "sakit" || cell.toLowerCase() === "izin") classWarna = 'class="st-sakit"';
+            else if (cell.toLowerCase() === "alpha" || cell.toLowerCase() === "alfa") classWarna = 'class="st-alpha"';
+            else if (cell.toLowerCase() === "belum absen") classWarna = 'class="st-belum"';
+
+            return `<td ${classWarna}>${cell}</td>`;
           }).join('')}</tr>`;
         }).join('');
       })
       .catch(err => {
-        tb.innerHTML = `<tr><td style="text-align:center; color:red; padding:20px;">❌ Gagal memuat data. Detail Error: ${err.message}<br><small>Pastikan Anda telah melakukan Deploy Ulang ke "New Version" di Google Apps Script Anda.</small></td></tr>`;
+        tb.innerHTML = `<tr><td style="text-align:center; color:red; padding:20px;">❌ Terjadi gangguan komunikasi server backend. Pastikan Anda telah meng-deploy ulang skrip backend ke versi terbaru.</td></tr>`;
         console.error("Fetch Error Log:", err);
       });
     }
 
     function unduhExcel(tipe) {
       if(!dataTerunduh.length) { 
-        alert('Silakan klik tampilkan data terlebih dahulu sebelum melakukan unduhan file!'); 
+        alert('Silakan klik tampilkan data terlebih dahulu sebelum mengunduh berkas!'); 
         return; 
       }
-      
       const worksheet = XLSX.utils.json_to_sheet(dataTerunduh);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Laporan Periode");
-      
-      const namaFile = `Rekap_${tipe}_Periode_${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(workbook, namaFile);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Matriks Kehadiran");
+      XLSX.writeFile(workbook, `Rekap_Harian_${tipe}_${new Date().toISOString().split('T')[0]}.xlsx`);
     }
 
-    // Eksekusi pemuatan drop-down kelas saat halaman web selesai dimuat
     window.onload = function() {
       memuatDaftarKelasOtomatis();
     };
