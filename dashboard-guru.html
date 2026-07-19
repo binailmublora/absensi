@@ -51,7 +51,7 @@
       gap: 12px;
       flex-wrap: wrap;
       align-items: flex-end;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .filter-group {
@@ -59,6 +59,21 @@
       flex-direction: column;
       gap: 6px;
     }
+
+    /* Panel Keterangan/Legenda Singkatan Huruf */
+    .legend-panel {
+      display: flex;
+      gap: 16px;
+      background: #f8faf9;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px dashed #cbd5e1;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
 
     label { font-size: 12px; font-weight: 600; color: #64748b; }
     select, input[type="date"], button { padding: 10px 14px; border-radius: 8px; font-size: 14px; border: 1px solid #dcdfdc; font-family: inherit; }
@@ -79,10 +94,11 @@
     th { background: #f8faf9; color: var(--primary); font-weight: 600; }
     
     .select-status {
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 6px;
-      font-weight: 700;
-      width: 110px;
+      font-weight: 800;
+      width: 65px;
+      text-align: center;
       font-family: inherit;
     }
     .status-H { background-color: #e2f0d9; color: #155724; border-color: #c3e6cb; }
@@ -126,6 +142,15 @@
         <button class="btn-save" id="btnSimpan" onclick="simpanKeAbsensiSiswa()" style="display:none;">💾 Simpan Rekapan</button>
       </div>
 
+      <!-- Keterangan Singkatan untuk Penginput -->
+      <div class="legend-panel">
+        <span style="font-weight:700; color:#475569; display:inline-block; margin-right:5px;">Info Kode Dropdown:</span>
+        <div class="legend-item"><span class="badge status-H">H</span> Hadir / Masuk</div>
+        <div class="legend-item"><span class="badge status-S">S</span> Sakit</div>
+        <div class="legend-item"><span class="badge status-I">I</span> Izin</div>
+        <div class="legend-item"><span class="badge status-A">A</span> Alpha (Tanpa Keterangan)</div>
+      </div>
+
       <!-- Tabel Input & Edit Absensi -->
       <div style="overflow-x: auto;">
         <table>
@@ -133,8 +158,8 @@
             <tr>
               <th style="width: 8%;">No</th>
               <th style="width: 25%;">ID Siswa</th>
-              <th style="width: 42%;">Nama Lengkap</th>
-              <th style="width: 25%;">Status Kehadiran</th>
+              <th style="width: 47%;">Nama Lengkap</th>
+              <th style="width: 20%;">Status</th>
             </tr>
           </thead>
           <tbody id="tabelSiswaBody">
@@ -152,7 +177,7 @@
   </div>
 
   <script>
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxG_6dJ1iglTF8Ad9svMTgPD4q6boR0bq2dTdhG_YVNgRzkqwbpLGZ7y7wJuOosLY6xPA/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxY9qzNdXcLt-7arlJNuoKF_48zqS6UNPRXlNs_mefkEiIJN5YyZa7VUiTO9EL6MSvRSQ/exec";
     const ROLE = localStorage.getItem('user_role');
 
     if (!localStorage.getItem('auth_token') || (ROLE !== 'Guru' && ROLE !== 'KepalaSekolah')) {
@@ -189,8 +214,6 @@
       });
     }
 
-    // Solusi Jitu: Menggunakan action alternatif 'getSiswa' atau 'getSiswaByKelas' 
-    // Jika tidak ada data absensi di tanggal tersebut, frontend akan memfilter master secara mandiri.
     function tampilkanSiswaDariSheetMaster() {
       const tgl = document.getElementById('tglAbsensi').value;
       const kelas = document.getElementById('kelasSiswa').value;
@@ -204,95 +227,57 @@
       tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">🔄 Mengambil data master siswa kelas ' + kelas + '...</td></tr>';
       document.getElementById('btnSimpan').style.display = 'none';
 
-      // Mengirimkan instruksi umum pembacaan data yang fleksibel ke backend
       fetch(BACKEND_URL, {
         method: 'POST',
         mode: 'cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          action: 'getSiswa', 
+          action: 'getAbsensiSiswaPerHari', 
           kelas: kelas,
           tanggal: tgl,
-          token: localStorage.getItem('auth_token')
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        // Gabungkan kemungkinan properti objek kembalian Apps Script Anda
-        let daftarSiswa = data.siswa || data.data || data.rows || (Array.isArray(data) ? data : null);
-
-        if(!daftarSiswa || daftarSiswa.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ada data respon atau nama aksi salah. Mengalihkan ke request fallback data...</td></tr>';
-          // Trik Fallback: Jika 'getSiswa' diblokir, coba gunakan fungsi utama namun dipaksa render kosong default H
-          mencobaRequestFallback(tgl, kelas, tbody);
-          return;
-        }
-
-        renderTabelSiswa(daftarSiswa, tbody);
-      })
-      .catch(err => {
-        console.error(err);
-        mencobaRequestFallback(tgl, kelas, tbody);
-      });
-    }
-
-    function mencobaRequestFallback(tgl, kelas, tbody) {
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'getAbsensiSiswaPerHari',
-          tanggal: tgl,
-          kelas: kelas,
           token: localStorage.getItem('auth_token')
         })
       })
       .then(res => res.json())
       .then(data => {
         let daftarSiswa = data.siswa || data.data || (Array.isArray(data) ? data : null);
+
         if(!daftarSiswa || daftarSiswa.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Data kelas tidak ditemukan. Pastikan nama kelas sesuai dengan di Sheet Master.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Data siswa tidak ditemukan di kelas ini pada sheet master.</td></tr>';
           return;
         }
-        renderTabelSiswa(daftarSiswa, tbody);
-      })
-      .catch(e => {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">❌ Gagal memuat data dari Spreadsheet. Hubungi Admin Sistem.</td></tr>';
-      });
-    }
 
-    function renderTabelSiswa(daftarSiswa, tbody) {
-      document.getElementById('btnSimpan').style.display = 'inline-block';
-      
-      tbody.innerHTML = daftarSiswa.map((mhs, index) => {
-        // Pemetaan ketat sesuai screenshot header Anda: ID_Siswa dan Nama
-        const idValid = mhs.ID_Siswa || mhs.id_siswa || mhs.nisn || mhs.id || "-";
-        const namaValid = mhs.Nama || mhs.nama || "-";
+        document.getElementById('btnSimpan').style.display = 'inline-block';
         
-        let st = mhs.Status || mhs.status || "H";
-        st = st.toUpperCase().trim();
-        if(st === "HADIR" || st === "MASUK" || st === "YA" || st === "") st = "H";
-        if(st === "SAKIT") st = "S";
-        if(st === "IZIN" || st === "IJIN") st = "I";
-        if(st === "ALPHA" || st === "ALFA") st = "A";
+        tbody.innerHTML = daftarSiswa.map((mhs, index) => {
+          const idValid = mhs.ID_Siswa || mhs.id_siswa || "-";
+          const namaValid = mhs.Nama || mhs.nama || "-";
+          
+          let st = mhs.Status || mhs.status || "H";
+          st = st.toUpperCase().trim().substring(0, 1); // Memotong untuk menyisakan kode 1 huruf saja
+          if(st !== "H" && st !== "S" && st !== "I" && st !== "A") st = "H";
 
-        return `
-          <tr data-idsiswa="${idValid}">
-            <td>${index + 1}</td>
-            <td><strong>${idValid}</strong></td>
-            <td>${namaValid}</td>
-            <td>
-              <select class="select-status status-${st}" onchange="updateWarnaDropdown(this)">
-                <option value="H" ${st === 'H' ? 'selected' : ''}>H (Hadir)</option>
-                <option value="S" ${st === 'S' ? 'selected' : ''}>S (Sakit)</option>
-                <option value="I" ${st === 'I' ? 'selected' : ''}>I (Izin)</option>
-                <option value="A" ${st === 'A' ? 'selected' : ''}>A (Alpha)</option>
-              </select>
-            </td>
-          </tr>
-        `;
-      }).join('');
+          return `
+            <tr data-idsiswa="${idValid}">
+              <td>${index + 1}</td>
+              <td><strong>${idValid}</strong></td>
+              <td>${namaValid}</td>
+              <td>
+                <select class="select-status status-${st}" onchange="updateWarnaDropdown(this)">
+                  <option value="H" ${st === 'H' ? 'selected' : ''}>H</option>
+                  <option value="S" ${st === 'S' ? 'selected' : ''}>S</option>
+                  <option value="I" ${st === 'I' ? 'selected' : ''}>I</option>
+                  <option value="A" ${st === 'A' ? 'selected' : ''}>A</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      })
+      .catch(err => {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">❌ Terjadi kesalahan pemrosesan data web.</td></tr>';
+      });
     }
 
     function updateWarnaDropdown(el) {
@@ -328,6 +313,7 @@
           tanggal: tgl,
           kelas: kelas,
           data: dataPresensi,
+          nama_user: localStorage.getItem('user_nama'), // Mengirim nama asli Guru untuk kolom Diinput_Oleh
           token: localStorage.getItem('auth_token')
         })
       })
@@ -336,10 +322,10 @@
         btn.disabled = false;
         btn.textContent = "💾 Simpan Rekapan";
         if(res.ok || res.status === "success") {
-          alert("✓ Rekapan manual berhasil disimpan ke sheet Absensi_Siswa!");
+          alert("✓ Rekapan satu huruf berhasil disimpan & Kolom Jam terisi otomatis!");
           tampilkanSiswaDariSheetMaster();
         } else {
-          alert("Gagal menyimpan: " + (res.message || "Periksa log sistem"));
+          alert("Gagal menyimpan: " + (res.message || "Periksa log"));
         }
       })
       .catch(err => {
