@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pusat Laporan & Export Data - E-Absensi</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Library Lembar Kerja Ekspor Excel SheetJS via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; --text-main: #2d3748; }
@@ -109,13 +110,20 @@
   </div>
 
   <script>
+    // URL Web App Google Apps Script Terbaru Anda
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbw4LIlo4_coYlzDvgwMGN76lreaSi0Q9stIo1iCF69blImHpngzt8RB7tp7cwbMEtfYqg/exec";
     const ROLE = localStorage.getItem('user_role');
     let dataTerunduh = [];
 
-    if (!ROLE) { window.location.href = 'index.html'; }
-    if (ROLE === 'KepalaSekolah') { document.getElementById('aksesKepsek').style.display = 'block'; }
+    // Proteksi Keamanan Halaman
+    if (!ROLE) { 
+      window.location.href = 'index.html'; 
+    }
+    if (ROLE === 'KepalaSekolah') { 
+      document.getElementById('aksesKepsek').style.display = 'block'; 
+    }
 
+    // Mengambil Daftar Kelas Secara Dinamis dari Database Google Sheet
     function memuatDaftarKelasOtomatis() {
       fetch(BACKEND_URL, {
         method: 'POST',
@@ -174,9 +182,10 @@
       const th = document.getElementById('thPreview');
       const tb = document.getElementById('tbPreview');
 
+      // Tampilkan kontainer pratinjau dan set status loading
       document.getElementById('boxPreview').style.display = 'block';
       table.style.display = 'none';
-      tb.innerHTML = '<tr><td colspan="8" style="text-align:center;">Sedang memproses akumulasi rentang periode...</td></tr>';
+      tb.innerHTML = '<tr><td style="text-align:center; padding:20px;">🔄 Sedang memproses akumulasi rentang periode...</td></tr>';
 
       fetch(BACKEND_URL, { 
         method: 'POST', 
@@ -184,32 +193,44 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload) 
       })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Respons jaringan bermasalah (HTTP " + res.status + ")");
+        return res.json();
+      })
       .then(data => {
-        dataTerunduh = data;
-        table.style.display = 'table';
-
-        if(!data.length) {
-          tb.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#64748b;">Tidak ada data absensi pada rentang periode ini.</td></tr>';
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          tb.innerHTML = '<tr><td style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ditemukan data absensi pada rentang periode bulan ini.</td></tr>';
+          dataTerunduh = [];
           return;
         }
 
+        dataTerunduh = data;
+        table.style.display = 'table';
+
+        // Ambil struktur nama kolom (key) secara dinamis dari objek pertama array JSON
         let keys = Object.keys(data[0]);
-        th.innerHTML = keys.map(k => `<th>${k.replace(/_/g, ' ')}</th>`).join('');
         
-        tb.innerHTML = data.map(row => `
-          <tr>${keys.map(k => `<td>${row[k] !== undefined && row[k] !== null ? row[k] : '-'}</td>`).join('')}</tr>
-        `).join('');
+        // Render judul header tabel (mengubah underscore menjadi spasi)
+        th.innerHTML = keys.map(k => `<th>${k.replace(/_/g, ' ').toUpperCase()}</th>`).join('');
+        
+        // Render baris data ke dalam tabel preview
+        tb.innerHTML = data.map(row => {
+          return `<tr>${keys.map(k => {
+            let nilaiSel = row[k];
+            if (nilaiSel === undefined || nilaiSel === null) nilaiSel = '-';
+            return `<td>${nilaiSel}</td>`;
+          }).join('')}</tr>`;
+        }).join('');
       })
       .catch(err => {
-        tb.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Gagal memuat data lintas periode. Periksa koneksi backend Anda.</td></tr>`;
-        console.error(err);
+        tb.innerHTML = `<tr><td style="text-align:center; color:red; padding:20px;">❌ Gagal memuat data. Detail Error: ${err.message}<br><small>Pastikan Anda telah melakukan Deploy Ulang ke "New Version" di Google Apps Script Anda.</small></td></tr>`;
+        console.error("Fetch Error Log:", err);
       });
     }
 
     function unduhExcel(tipe) {
       if(!dataTerunduh.length) { 
-        alert('Silakan tampilkan data terlebih dahulu sebelum melakukan unduhan file!'); 
+        alert('Silakan klik tampilkan data terlebih dahulu sebelum melakukan unduhan file!'); 
         return; 
       }
       
@@ -221,6 +242,7 @@
       XLSX.writeFile(workbook, namaFile);
     }
 
+    // Eksekusi pemuatan drop-down kelas saat halaman web selesai dimuat
     window.onload = function() {
       memuatDaftarKelasOtomatis();
     };
