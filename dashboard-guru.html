@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Academic Guru - Input Absensi Manual</title>
+  <title>Portal Akademik Guru - Input Absensi Manual</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root { 
@@ -60,16 +60,6 @@
       margin-bottom: 20px; 
     }
     .card-header h2 { margin: 0; color: var(--text-main); font-size: 22px; }
-    
-    .btn-report { 
-      background: #134e4a; 
-      color: white; 
-      padding: 12px 18px; 
-      border-radius: 8px; 
-      font-weight: 600; 
-      text-decoration: none; 
-      font-size: 14px; 
-    }
     
     .filter-bar { 
       display: flex; 
@@ -143,7 +133,6 @@
     <div class="card">
       <div class="card-header">
         <h2>Daftar Absensi Kehadiran Siswa (Input Manual)</h2>
-        <a href="dashboard-export.html" class="btn-report">📊 Laporan & Cetak Rekapan</a>
       </div>
 
       <div class="filter-bar">
@@ -175,20 +164,14 @@
   </div>
 
   <script>
-    // ⚠️ MASUKKAN URL WEB APP ANDA YANG BARU DI SINI:
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzWkgo6rGl88WLCk_BLBGpkaCLbpuITxNpf9gf1yo0dUrvj_AcXWXxyCN68f-wya3iahg/exec";
+    // Tautan Apps Script Baru yang Anda Berikan
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyVCp3hLKPxfh8RbPId4jjc28mcSaIfuIJx0o-vlwvq2y3bmy4q-cU0YWzfR-QbEhddIA/exec";
     
-    const NAMA_GURU = localStorage.getItem('user_nama') || "Guru Pengajar";
-    const ROLE = localStorage.getItem('user_role');
-
-    if (!ROLE || (ROLE !== 'Guru' && ROLE !== 'KepalaSekolah')) {
-      alert("Sesi berakhir, silakan login kembali.");
-      window.location.href = 'index.html';
-    }
-
+    // Fallback jika localStorage kosong
+    const NAMA_GURU = localStorage.getItem('user_nama') || "Ratih Nur Rahmasari"; 
     document.getElementById('namaGuruTampilan').innerText = NAMA_GURU;
 
-    // Load Dropdown Kelas awal (POST Bypass CORS)
+    // Fungsi 1: Mengambil data daftar kelas dari Apps Script via POST text/plain (Anti CORS)
     function ambilDaftarKelasDashboard() {
       const selectKelas = document.getElementById('filterKelas');
       
@@ -212,12 +195,12 @@
         }
       })
       .catch(err => {
-        console.error("Error memuat kelas:", err);
-        selectKelas.innerHTML = '<option value="">Gagal memuat data (Cek Apps Script)</option>';
+        console.error("Error:", err);
+        selectKelas.innerHTML = '<option value="">Gagal memuat data (Periksa Deployment)</option>';
       });
     }
 
-    // Menampilkan daftar master siswa berdasarkan kelas pilihan
+    // Fungsi 2: Mengambil daftar siswa berdasarkan filter kelas yang dipilih
     function muatMasterSiswa() {
       const kelas = document.getElementById('filterKelas').value;
       const tbody = document.getElementById('bodyTabelSiswa');
@@ -267,11 +250,11 @@
         }).join('');
       })
       .catch(err => {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">Gagal memuat data siswa. Pastikan Web App Apps Script sudah di-deploy dengan benar.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">Gagal memuat data siswa. Pastikan Web App terkonfigurasi untuk 'Anyone'.</td></tr>`;
       });
     }
 
-    // Menambahkan baris log ke spreadsheet
+    // Fungsi 3: Mengirim baris data absensi untuk dicatat di log spreadsheet
     function eksekusiAbsenManual(idSiswa, nama, kelas) {
       const pilihanStatus = document.querySelector(`input[name="status_${idSiswa}"]:checked`).value;
       
@@ -282,7 +265,7 @@
         kelas: kelas,
         status: pilihanStatus,
         olehGuru: NAMA_GURU,
-        keterangan: "Manual"
+        keterangan: "Manual via Dashboard"
       };
 
       fetch(BACKEND_URL, {
@@ -292,25 +275,26 @@
       })
       .then(res => res.json())
       .then(res => {
-        if(res.ok) {
-          alert(`Berhasil! Absensi [${pilihanStatus}] untuk ${nama} berhasil ditambahkan ke baris log.`);
+        if(res.ok || res.success) {
+          alert(`Berhasil! Absensi [${pilihanStatus}] untuk ${nama} berhasil disimpan.`);
         } else {
-          alert("Gagal: " + res.message);
+          alert("Gagal menyimpan: " + (res.message || "Terjadi kesalahan di server."));
         }
       })
       .catch(err => {
         console.error(err);
-        alert("Gagal memproses data. Cek koneksi internet Anda.");
+        alert("Gagal memproses data. Hubungi admin sistem.");
       });
     }
 
     function prosesLogout() {
       if (confirm("Apakah Anda yakin ingin keluar?")) {
         localStorage.clear();
-        window.location.href = 'index.html';
+        window.location.reload();
       }
     }
 
+    // Otomatis memuat daftar kelas saat halaman selesai dimuat browser
     window.onload = function() {
       ambilDaftarKelasDashboard();
     };
