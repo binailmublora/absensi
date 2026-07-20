@@ -3,86 +3,340 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Wali Murid - E-Absensi</title>
+  <title>Dashboard Orang Tua - E-Absensi</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); padding: 16px; }
-    .container { max-width: 500px; margin: 0 auto; }
-    .header { background: var(--primary); color: white; padding: 20px; border-radius: 16px; margin-bottom: 16px; border-bottom: 4px solid var(--accent); position: relative; }
-    .btn-logout { position: absolute; top: 20px; right: 20px; background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-    .card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 16px; }
-    select, button.btn-cari { padding: 12px; border-radius: 8px; border: 1px solid #dcdfdc; font-size: 14px; }
-    button.btn-cari { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; }
-    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8faf8; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid var(--accent); }
-    .status-badge { font-weight: 700; font-size: 13px; }
+    :root {
+      --primary: #0f5132;
+      --accent: #e5a93b;
+      --bg: #f4f7f5;
+      --text-main: #1e293b;
+      --white: #ffffff;
+      --danger: #dc3545;
+      --success: #198754;
+      --warning: #ffc107;
+      --info: #0dcaf0;
+    }
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background: var(--bg); 
+      color: var(--text-main); 
+      padding: 20px; 
+    }
+    
+    .container { max-width: 950px; margin: 0 auto; }
+    
+    .header { 
+      background: var(--primary); 
+      color: white; 
+      padding: 24px; 
+      border-radius: 16px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      border-bottom: 4px solid var(--accent); 
+    }
+    
+    .card {
+      background: var(--white);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+      margin-bottom: 20px;
+    }
+
+    /* Informasi Anak */
+    .student-info {
+      background: #eef7f2;
+      border-left: 4px solid var(--primary);
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .student-info div { font-size: 14px; }
+    .student-info strong { color: var(--primary); }
+
+    .filter-panel {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 20px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label { font-size: 12px; font-weight: 600; color: #64748b; }
+    input[type="date"], button { padding: 10px 14px; border-radius: 8px; font-size: 14px; border: 1px solid #dcdfdc; font-family: inherit; }
+    
+    button { 
+      background: var(--primary); 
+      color: white; 
+      border: none; 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+
+    /* Kartu Summary/Ringkasan Jumlah */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .summary-card {
+      background: #f8faf9;
+      border: 1px solid #e2e8f0;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .summary-card .num { font-size: 24px; font-weight: 700; margin-top: 4px; }
+    .sum-H { border-top: 4px solid var(--success); }
+    .sum-H .num { color: var(--success); }
+    .sum-S { border-top: 4px solid var(--warning); }
+    .sum-S .num { color: #b45309; }
+    .sum-I { border-top: 4px solid var(--info); }
+    .sum-I .num { color: #0891b2; }
+    .sum-A { border-top: 4px solid var(--danger); }
+    .sum-A .num { color: var(--danger); }
+
+    /* Panel Keterangan/Legenda Kode Huruf */
+    .legend-panel {
+      display: flex;
+      gap: 16px;
+      background: #f8faf9;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border: 1px dashed #cbd5e1;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 12px; border-bottom: 1px solid #edf2f0; font-size: 14px; text-align: left; }
+    th { background: #f8faf9; color: var(--primary); font-weight: 600; }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 12px;
+      text-align: center;
+      min-width: 30px;
+    }
+    .status-H { background-color: #e2f0d9; color: #155724; border: 1px solid #c3e6cb; }
+    .status-S { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .status-I { background-color: #cff4fc; color: #055160; border: 1px solid #b6effb; }
+    .status-A { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
   </style>
 </head>
 <body>
   <div class="container">
+    
+    <!-- Topbar Header -->
     <div class="header">
-      <button class="btn-logout" onclick="logout()">Keluar</button>
-      <h2>Wali Murid Portal</h2>
-      <p style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Orang Tua Dari: <strong id="namaAnak">...</strong></p>
+      <div>
+        <h1>Dashboard Orang Tua</h1>
+        <p>Ahlan wa sahlan, <strong id="namaOrtu">...</strong></p> 
+      </div>
+      <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
     </div>
 
+    <!-- Card Utama -->
     <div class="card">
-      <h3>Cek Riwayat Bulanan</h3>
-      <div style="display: flex; gap: 8px; margin-top: 12px;">
-        <select id="bulan" style="flex: 2;">
-          <option value="07">Juli</option>
-          <option value="08">Agustus</option>
-        </select>
-        <button class="btn-cari" style="flex: 1;" onclick="loadAbsenAnak()">Cari</button>
+      <h2>📅 Rekapan Kehadiran Ananda</h2>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Pilih rentang tanggal untuk melihat riwayat absensi siswa.</p>
+
+      <!-- Informasi Profil Ananda -->
+      <div class="student-info">
+        <div>Nama Ananda: <strong id="namaSiswaView">Memuat...</strong></div>
+        <div>Kelas: <strong id="kelasSiswaView">-</strong></div>
       </div>
+      
+      <!-- Filter Rentang Periode -->
+      <div class="filter-panel">
+        <div class="filter-group">
+          <label>Dari Tanggal:</label>
+          <input type="date" id="tglMulai">
+        </div>
+        <div class="filter-group">
+          <label>Sampai Tanggal:</label>
+          <input type="date" id="tglSelesai">
+        </div>
+        <button onclick="muatAbsensiOrtu()">🔍 Tampilkan Data</button>
+      </div>
+
+      <!-- Ringkasan Jumlah Kehadiran -->
+      <div class="summary-grid">
+        <div class="summary-card sum-H">
+          <label>Hadir (H)</label>
+          <div class="num" id="countH">0</div>
+        </div>
+        <div class="summary-card sum-S">
+          <label>Sakit (S)</label>
+          <div class="num" id="countS">0</div>
+        </div>
+        <div class="summary-card sum-I">
+          <label>Izin (I)</label>
+          <div class="num" id="countI">0</div>
+        </div>
+        <div class="summary-card sum-A">
+          <label>Alpha (A)</label>
+          <div class="num" id="countA">0</div>
+        </div>
+      </div>
+
+      <!-- Keterangan Kode Huruf Status -->
+      <div class="legend-panel">
+        <span style="font-weight:700; color:#475569; display:inline-block; margin-right:5px;">Info Kode Huruf:</span>
+        <div class="legend-item"><span class="badge status-H">H</span> Hadir</div>
+        <div class="legend-item"><span class="badge status-S">S</span> Sakit</div>
+        <div class="legend-item"><span class="badge status-I">I</span> Izin</div>
+        <div class="legend-item"><span class="badge status-A">A</span> Alpha (Tanpa Keterangan)</div>
+      </div>
+
+      <!-- Tabel Pratinjau Rekapan -->
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 10%;">No</th>
+              <th style="width: 30%;">Tanggal</th>
+              <th style="width: 25%;">Jam Input</th>
+              <th style="width: 35%;">Status Kehadiran</th>
+            </tr>
+          </thead>
+          <tbody id="tabelOrtuBody">
+            <tr><td colspan="4" style="text-align:center; color: #64748b; padding: 20px;">Silakan tentukan periode tanggal dan klik "Tampilkan Data".</td></tr>
+          </tbody>
+        </table>
+      </div>
+
     </div>
 
-    <div class="card">
-      <h3 style="margin-bottom: 12px;">Daftar Kehadiran</h3>
-      <div id="listAbsensi">
-        <p style="text-align: center; color: #64748b; font-size: 13px;">Silakan klik cari untuk memuat data.</p>
-      </div>
-    </div>
   </div>
 
   <script>
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwoYf8DwqmK9HAPr_3YWJOQNFy07KC7TsYUbWoVWqBiXCHqTiFXGeHVB8-h3m4o_8G_Hw/exec";
-    
-    if (!localStorage.getItem('auth_token') || localStorage.getItem('user_role') !== 'OrangTua') {
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbx4pLnKs2fNt628OgZdFUTTfSUBzvaeiyBd6txBWYMvgHt12gGlEJXu7trhH800Ggxsig/exec";
+    const ROLE = localStorage.getItem('user_role');
+
+    // Validasi Akses Khusus Orang Tua
+    if (!localStorage.getItem('auth_token') || ROLE !== 'OrangTua') {
       window.location.href = 'index.html';
     }
-    // Nama anak disimpan dari parameter id_terkait / nama di sheet user saat login
-    document.getElementById('namaAnak').textContent = localStorage.getItem('user_nama');
 
-    function loadAbsenAnak() {
-      const bln = document.getElementById('bulan').value;
-      const idTerkait = localStorage.getItem('id_terkait');
-      const container = document.getElementById('listAbsensi');
+    document.getElementById('namaOrtu').textContent = localStorage.getItem('user_nama') || "Orang Tua";
+
+    // Set Default Rentang Tanggal (Awal Bulan s/d Hari Ini)
+    function setPeriodeDefault() {
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       
-      container.innerHTML = '<p style="text-align:center; font-size:13px;">Mencari data di server...</p>';
+      document.getElementById('tglMulai').value = fmt(firstDay);
+      document.getElementById('tglSelesai').value = fmt(today);
+    }
+
+    function muatAbsensiOrtu() {
+      const tglMulai = document.getElementById('tglMulai').value;
+      const tglSelesai = document.getElementById('tglSelesai').value;
+      const tbody = document.getElementById('tabelOrtuBody');
+
+      if (!tglMulai || !tglSelesai) {
+        alert("Mohon isi tanggal mulai dan tanggal selesai!");
+        return;
+      }
+
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">🔄 Mengambil data presensi...</td></tr>';
 
       fetch(BACKEND_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'getAbsenAnak', idSiswa: idTerkait, bulan: bln })
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'getAbsensiOrtu',
+          tgl_mulai: tglMulai,
+          tgl_selesai: tglSelesai,
+          nama_ortu: localStorage.getItem('user_nama'),
+          token: localStorage.getItem('auth_token')
+        })
       })
       .then(res => res.json())
-      .then(data => {
-        if(!data.length) {
-          container.innerHTML = '<p style="text-align:center; color:red; font-size:13px;">Tidak ada riwayat absensi bulan ini.</p>';
+      .then(res => {
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">⚠️ ${res.message || 'Gagal memuat data'}</td></tr>`;
           return;
         }
-        container.innerHTML = data.map(d => `
-          <div class="history-item">
-            <div>
-              <div style="font-size: 14px; font-weight: 600;">${d.tanggal}</div>
-              <div style="font-size: 11px; color: #64748b;">Jam: ${d.jam || '-'}</div>
-            </div>
-            <div class="status-badge" style="color: ${d.status === 'Masuk' ? 'green' : 'red'};">${d.status}</div>
-          </div>
-        `).join('');
+
+        // Tampilkan info siswa
+        document.getElementById('namaSiswaView').textContent = res.nama_siswa || "-";
+        document.getElementById('kelasSiswaView').textContent = res.kelas || "-";
+
+        const logs = res.data || [];
+        
+        // Reset counter
+        let h = 0, s = 0, i = 0, a = 0;
+
+        if (logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">Tidak ada riwayat presensi pada periode tanggal ini.</td></tr>';
+        } else {
+          tbody.innerHTML = logs.map((row, idx) => {
+            let st = (row.status || "H").toUpperCase().trim().substring(0, 1);
+            if (st === 'H') h++;
+            else if (st === 'S') s++;
+            else if (st === 'I') i++;
+            else if (st === 'A') a++;
+            else h++;
+
+            return `
+              <tr>
+                <td>${idx + 1}</td>
+                <td><strong>${row.tanggal}</strong></td>
+                <td>${row.jam || "-"}</td>
+                <td><span class="status-badge status-${st}">${st}</span></td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // Update angka ringkasan
+        document.getElementById('countH').textContent = h;
+        document.getElementById('countS').textContent = s;
+        document.getElementById('countI').textContent = i;
+        document.getElementById('countA').textContent = a;
+      })
+      .catch(err => {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red; padding:20px;">❌ Terjadi kesalahan jaringan.</td></tr>';
       });
     }
-    function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'index.html';
+    }
+
+    window.onload = function() {
+      setPeriodeDefault();
+      muatAbsensiOrtu();
+    };
   </script>
 </body>
 </html>
