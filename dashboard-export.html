@@ -3,298 +3,282 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pusat Rekapan Data & Ekspor</title>
+  <title>Pusat Laporan & Export Data - E-Absensi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background-color: #f4f6f9;
-      padding: 20px;
-      color: #333;
-    }
-
-    /* Tombol Kembali */
-    .btn-kembali {
-      display: inline-block;
-      background-color: #2c3e50;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      transition: background 0.2s ease;
-    }
-
-    .btn-kembali:hover {
-      background-color: #1a252f;
-    }
-
-    /* Container Card Utama */
-    .card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 24px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      margin-bottom: 20px;
-    }
-
-    .card-title {
-      font-size: 20px;
-      font-weight: bold;
-      color: #1e4d2b;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    .section-desc {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 20px;
-    }
-
-    /* Form Filter */
-    .filter-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto auto;
-      gap: 15px;
-      align-items: end;
-      margin-bottom: 25px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .form-group label {
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .form-group input, .form-group select {
-      padding: 9px 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-      outline: none;
-    }
-
-    /* Buttons */
-    .btn-tampilkan {
-      background-color: #005a36;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      height: 40px;
-    }
-
-    .btn-tampilkan:hover {
-      background-color: #004227;
-    }
-
-    .btn-excel {
-      background-color: #f39c12;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      height: 40px;
-    }
-
-    /* Alert Warning (Initial State) */
-    .alert-box {
-      background-color: #fffde7;
-      border: 1px solid #ffe082;
-      color: #795548;
-      padding: 14px;
-      border-radius: 6px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    /* Tabel Preview */
-    .table-container {
-      margin-top: 15px;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    th, td {
-      border: 1px solid #e0e0e0;
-      padding: 10px 14px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #f8f9fa;
-      font-weight: 600;
-    }
-
-    .badge-hadir {
-      background-color: #d4edda;
-      color: #155724;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-    }
+    :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; --text-main: #2d3748; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); padding: 20px; color: var(--text-main); }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .btn-back { text-decoration: none; color: var(--primary); font-weight: 600; font-size: 14px; display: inline-block; margin-bottom: 15px; }
+    .card { background: var(--white); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
+    .box-flex { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 15px; margin-bottom: 15px; }
+    .box-flex label { font-size: 12px; font-weight: 600; color: #64748b; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    select, input[type="date"], button { padding: 12px 16px; border-radius: 8px; font-size: 14px; }
+    select, input[type="date"] { border: 1px solid #dcdfdc; width: 175px; background: #fff; font-family: inherit; }
+    button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    button.btn-accent { background: var(--accent); }
+    button:hover { opacity: 0.9; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 10px 8px; border: 1px solid #e2e8f0; font-size: 12px; text-align: left; white-space: nowrap; }
+    th { background: #f8fafc; color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 11px; }
+    tr:nth-child(even) { background-color: #f8fafc; }
+    
+    /* Area Pratinjau Terpisah */
+    .preview-box { display: none; margin-top: 25px; border-top: 2px dashed #e2e8f0; padding-top: 20px; }
+    
+    /* Warna Status Absensi Matriks */
+    .st-masuk { color: #155724; font-weight: bold; background-color: #e2f0d9; text-align: center; }
+    .st-sakit { color: #856404; font-weight: bold; background-color: #fff3cd; text-align: center; }
+    .st-alpha { color: #721c24; font-weight: bold; background-color: #f8d7da; text-align: center; }
+    .st-belum { color: #94a3b8; font-style: italic; background-color: #f1f5f9; text-align: center; }
   </style>
 </head>
 <body>
+  <div class="container">
+    <a href="#" class="btn-back" onclick="kembaliKeDashboard()">⬅️ Kembali ke Dashboard Utama</a>
+    
+    <h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)</h1>
 
-  <!-- SOLUSI MASALAH 1: Link Relatif ke index.html agar tidak error 404 -->
-  <a href="./index.html" class="btn-kembali">
-    ← Kembali ke Dashboard Utama
-  </a>
-
-  <!-- Header Section -->
-  <div class="card">
-    <div class="card-title">
-      📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)
-    </div>
-  </div>
-
-  <!-- Main Filter Section -->
-  <div class="card">
-    <div class="section-title">1. Rekapan Absensi Siswa Berdasarkan Kelas & Tanggal</div>
-    <div class="section-desc">Pilih rentang tanggal spesifik dan kelas untuk memunculkan pratinjau tabel matriks kehadiran siswa.</div>
-
-    <form id="formFilter" onsubmit="event.preventDefault();">
-      <div class="filter-grid">
-        <div class="form-group">
-          <label for="tglMulai">Dari Tanggal:</label>
-          <input type="date" id="tglMulai" value="2026-07-01">
+    <!-- BLOK 1: REKAPAN SISWA -->
+    <div class="card" id="aksesSiswa" style="display:none;">
+      <h2>1. Rekapan Absensi Siswa Berdasarkan Kelas & Tanggal</h2>
+      <p style="font-size: 13px; color: #64748b;">Pilih rentang tanggal spesifik dan kelas untuk memunculkan pratinjau tabel matriks kehadiran siswa.</p>
+      <div class="box-flex">
+        <div class="filter-group">
+          <label>Dari Tanggal:</label>
+          <input type="date" id="tglMulaiSiswa">
         </div>
-
-        <div class="form-group">
-          <label for="tglSelesai">Sampai Tanggal:</label>
-          <input type="date" id="tglSelesai" value="2026-07-21">
+        <div class="filter-group">
+          <label>Sampai Tanggal:</label>
+          <input type="date" id="tglSelesaiSiswa">
         </div>
-
-        <div class="form-group">
-          <label for="pilihKelas">Pilih Kelas:</label>
-          <select id="pilihKelas">
-            <option value="Abu Bakar">Abu Bakar</option>
-            <option value="Umar bin Khattab">Umar bin Khattab</option>
-            <option value="Utsman bin Affan">Utsman bin Affan</option>
-            <option value="Ali bin Abi Thalib">Ali bin Abi Thalib</option>
+        <div class="filter-group">
+          <label>Pilih Kelas:</label>
+          <select id="kelasSiswa">
+            <option value="">Memuat kelas...</option>
           </select>
         </div>
-
-        <!-- SOLUSI MASALAH 2: Button ID untuk event listener JavaScript -->
-        <button type="button" id="btnTampilkan" class="btn-tampilkan">
-          🔍 Tampilkan Data
-        </button>
-
-        <button type="button" class="btn-excel">
-          📄 Unduh Excel
-        </button>
+        <div class="filter-group" style="margin-top: 18px;">
+          <button onclick="prosesRekap('Siswa')">🔍 Tampilkan Data</button>
+        </div>
+        <div class="filter-group" style="margin-top: 18px;">
+          <button class="btn-accent" onclick="unduhExcel('Siswa')">📥 Unduh Excel</button>
+        </div>
       </div>
-    </form>
 
-    <div class="section-title">📋 Pratinjau Lembar Rekapan Data Siswa</div>
-
-    <!-- Alert Awal (Akan disembunyikan saat tombol diklik) -->
-    <div id="alertWarning" class="alert-box">
-      ⚠️ Silakan klik tombol <strong>"Tampilkan Data"</strong> untuk memuat data absensi.
+      <!-- POSISI BARU: Pratinjau Siswa Naik Ke Sini -->
+      <div class="preview-box" id="boxPreviewSiswa">
+        <h3 style="color: var(--primary); margin-bottom: 10px;">📋 Pratinjau Lembar Rekapan Data Siswa</h3>
+        <div style="overflow-x: auto;">
+          <table id="tabelPreviewSiswa">
+            <thead><tr id="thPreviewSiswa"></tr></thead>
+            <tbody id="tbPreviewSiswa"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- Container Tabel (Awalnya tersembunyi via inline CSS display:none) -->
-    <div id="tabelContainer" class="table-container" style="display: none;">
-      <table>
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>NISN</th>
-            <th>Nama Siswa</th>
-            <th>Kelas</th>
-            <th>Status Kehadiran</th>
-          </tr>
-        </thead>
-        <tbody id="bodyTabel">
-          <!-- Data dinamis akan dimasukkan oleh JavaScript -->
-        </tbody>
-      </table>
-    </div>
+    <!-- BLOK 2: REKAPAN GURU -->
+    <div class="card" id="aksesKepsek" style="display:none;">
+      <h2>2. Rekapan Komprehensif Kehadiran Guru</h2>
+      <p style="font-size: 13px; color: #64748b;">Menu eksklusif Kepala Sekolah untuk melacak keaktifan harian seluruh guru.</p>
+      <div class="box-flex">
+        <div class="filter-group">
+          <label>Dari Tanggal:</label>
+          <input type="date" id="tglMulaiGuru">
+        </div>
+        <div class="filter-group">
+          <label>Sampai Tanggal:</label>
+          <input type="date" id="tglSelesaiGuru">
+        </div>
+        <div class="filter-group" style="margin-top: 18px;">
+          <button onclick="prosesRekap('Guru')">🔍 Tampilkan Data</button>
+        </div>
+        <div class="filter-group" style="margin-top: 18px;">
+          <button class="btn-accent" onclick="unduhExcel('Guru')">📥 Unduh Excel</button>
+        </div>
+      </div>
 
+      <!-- POSISI BARU: Pratinjau Guru Berada Di Sini -->
+      <div class="preview-box" id="boxPreviewGuru">
+        <h3 style="color: var(--primary); margin-bottom: 10px;">📋 Pratinjau Lembar Rekapan Data Guru</h3>
+        <div style="overflow-x: auto;">
+          <table id="tabelPreviewGuru">
+            <thead><tr id="thPreviewGuru"></tr></thead>
+            <tbody id="tbPreviewGuru"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- SCRIPT JAVASCRIPT SOLUSI MASALAH 2 -->
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      const btnTampilkan = document.getElementById("btnTampilkan");
-      const alertWarning = document.getElementById("alertWarning");
-      const tabelContainer = document.getElementById("tabelContainer");
-      const bodyTabel = document.getElementById("bodyTabel");
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycby89brm0854ePNC9L7Vv_fQ5_A1NHXINfomtp5X_zxTGOJ9Ya-k2tc2h4KncXsipcBdAg/exec";
+    const ROLE = localStorage.getItem('user_role');
+    
+    let dataSiswaTerunduh = [];
+    let dataGuruTerunduh = [];
 
-      // Sample Data Simulasi Absensi
-      const dataAbsensi = [
-        { no: 1, nisn: "005123401", nama: "Ahmad Rayhan", kelas: "Abu Bakar", status: "Hadir" },
-        { no: 2, nisn: "005123402", nama: "Aisyah Putri", kelas: "Abu Bakar", status: "Hadir" },
-        { no: 3, nisn: "005123403", nama: "Bilal Ramadhan", kelas: "Abu Bakar", status: "Hadir" },
-        { no: 4, nisn: "005123404", nama: "Fatimah Azzahra", kelas: "Abu Bakar", status: "Hadir" }
-      ];
+    // Mengatur default tanggal kalender (Tanggal 1 bulan ini s/d hari ini)
+    function setFormatTanggalDefault() {
+      const hariIni = new Date();
+      const yyyy = hariIni.getFullYear();
+      const mm = String(hariIni.getMonth() + 1).padStart(2, '0');
+      const dd = String(hariIni.getDate()).padStart(2, '0');
+      
+      const formatHariIni = `${yyyy}-${mm}-${dd}`;
+      const formatAwalBulan = `${yyyy}-${mm}-01`;
 
-      btnTampilkan.addEventListener("click", function() {
-        // 1. Sembunyikan alert warning
-        alertWarning.style.display = "none";
+      if(document.getElementById('tglMulaiSiswa')) document.getElementById('tglMulaiSiswa').value = formatAwalBulan;
+      if(document.getElementById('tglMulaiGuru')) document.getElementById('tglMulaiGuru').value = formatAwalBulan;
+      if(document.getElementById('tglSelesaiSiswa')) document.getElementById('tglSelesaiSiswa').value = formatHariIni;
+      if(document.getElementById('tglSelesaiGuru')) document.getElementById('tglSelesaiGuru').value = formatHariIni;
+    }
 
-        // 2. Kosongkan isi tabel sebelumnya
-        bodyTabel.innerHTML = "";
+    function konfigurasiHakAksesAplikasi() {
+      if (!ROLE) {
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      if (ROLE === 'KepalaSekolah') {
+        document.getElementById('aksesSiswa').style.display = 'block';
+        document.getElementById('aksesKepsek').style.display = 'block';
+      } else if (ROLE === 'Guru') {
+        document.getElementById('aksesSiswa').style.display = 'block';
+        document.getElementById('aksesKepsek').style.display = 'none';
+      } else if (ROLE === 'OrangTua') {
+        alert("Akses dialihkan menuju dashboard riwayat personal siswa.");
+        window.location.href = 'dashboard-wali.html';
+      }
+    }
 
-        // 3. Masukkan data ke dalam tabel
-        dataAbsensi.forEach(item => {
-          const row = `
-            <tr>
-              <td>${item.no}</td>
-              <td>${item.nisn}</td>
-              <td>${item.nama}</td>
-              <td>${item.kelas}</td>
-              <td><span class="badge-hadir">${item.status}</span></td>
-            </tr>
-          `;
-          bodyTabel.innerHTML += row;
-        });
-
-        // 4. Tampilkan tabel
-        tabelContainer.style.display = "block";
+    function memuatDaftarKelasOtomatis() {
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getDaftarKelas' })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Backend return status not ok");
+        return res.json();
+      })
+      .then(res => {
+        const selectKelas = document.getElementById('kelasSiswa');
+        if (res && res.ok && res.kelas && res.kelas.length > 0) {
+          selectKelas.innerHTML = res.kelas.map(kls => `<option value="${kls}">${kls}</option>`).join('');
+        } else {
+          selectKelas.innerHTML = `<option value="">Tidak ada data kelas</option>`;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('kelasSiswa').innerHTML = `<option value="">Gagal Sinkronisasi Kelas</option>`;
       });
-    });
-  </script>
+    }
 
+    function kembaliKeDashboard() {
+      if(ROLE === 'KepalaSekolah') window.location.href = 'dashboard-kepsek.html';
+      else if(ROLE === 'Guru') window.location.href = 'dashboard-guru.html';
+      else window.location.href = 'index.html';
+    }
+
+    function prosesRekap(tipe) {
+      let tMulai, tSelesai, kelasPilihan = "";
+      
+      if (tipe === 'Siswa') {
+        tMulai = document.getElementById('tglMulaiSiswa').value;
+        tSelesai = document.getElementById('tglSelesaiSiswa').value;
+        kelasPilihan = document.getElementById('kelasSiswa').value;
+      } else {
+        tMulai = document.getElementById('tglMulaiGuru').value;
+        tSelesai = document.getElementById('tglSelesaiGuru').value;
+      }
+
+      if (!tMulai || !tSelesai) {
+        alert("Mohon tentukan pilihan tanggal mulai dan tanggal selesai terlebih dahulu!");
+        return;
+      }
+
+      if (tMulai > tSelesai) {
+        alert("Tanggal mulai tidak boleh melebihi tanggal selesai!");
+        return;
+      }
+
+      let payload = { 
+        action: 'getRekapanBulanan', 
+        tipe: tipe, 
+        bulanMulai: tMulai, 
+        bulanSelesai: tSelesai, 
+        kelas: kelasPilihan 
+      };
+
+      const box = document.getElementById(`boxPreview${tipe}`);
+      const th = document.getElementById(`thPreview${tipe}`);
+      const tb = document.getElementById(`tbPreview${tipe}`);
+
+      box.style.display = 'block';
+      tb.innerHTML = '<tr><td style="text-align:center; padding:20px;">🔄 Memuat lembar baris data hari kerja...</td></tr>';
+
+      fetch(BACKEND_URL, { 
+        method: 'POST', 
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload) 
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          tb.innerHTML = '<tr><td style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ditemukan rekapan data absensi pada rentang tanggal ini.</td></tr>';
+          if(tipe === 'Siswa') dataSiswaTerunduh = []; else dataGuruTerunduh = [];
+          return;
+        }
+
+        if(tipe === 'Siswa') dataSiswaTerunduh = data; else dataGuruTerunduh = data;
+
+        let keys = Object.keys(data[0]);
+        th.innerHTML = keys.map(k => `<th>${k}</th>`).join('');
+        
+        tb.innerHTML = data.map(row => {
+          return `<tr>${keys.map(k => {
+            let cell = row[k] !== undefined && row[k] !== null ? String(row[k]) : '-';
+            let classWarna = "";
+            
+            if (cell.toLowerCase() === "masuk") classWarna = 'class="st-masuk"';
+            else if (cell.toLowerCase() === "sakit" || cell.toLowerCase() === "izin") classWarna = 'class="st-sakit"';
+            else if (cell.toLowerCase() === "alpha" || cell.toLowerCase() === "alfa") classWarna = 'class="st-alpha"';
+            else if (cell.toLowerCase() === "belum absen") classWarna = 'class="st-belum"';
+
+            return `<td ${classWarna}>${cell}</td>`;
+          }).join('')}</tr>`;
+        }).join('');
+      })
+      .catch(err => {
+        tb.innerHTML = `<tr><td style="text-align:center; color:red; padding:20px;">❌ Terjadi gangguan komunikasi server backend.</td></tr>`;
+        console.error(err);
+      });
+    }
+
+    function unduhExcel(tipe) {
+      const dataArr = (tipe === 'Siswa') ? dataSiswaTerunduh : dataGuruTerunduh;
+      if(!dataArr.length) { 
+        alert('Tampilkan data terlebih dahulu ke tabel sebelum mengekspor!'); 
+        return; 
+      }
+      const worksheet = XLSX.utils.json_to_sheet(dataArr);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, `Rekap ${tipe}`);
+      XLSX.writeFile(workbook, `Laporan_Harian_${tipe}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+
+    window.onload = function() {
+      setFormatTanggalDefault();
+      konfigurasiHakAksesAplikasi();
+      memuatDaftarKelasOtomatis();
+    };
+  </script>
 </body>
 </html>
