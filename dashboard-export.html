@@ -3,48 +3,211 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pusat Rekapan Data & Ekspor - Absensi</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>Pusat Rekapan Data & Ekspor</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f4f6f9;
+      padding: 20px;
+      color: #333;
+    }
+
+    /* Tombol Kembali */
+    .btn-kembali {
+      display: inline-block;
+      background-color: #2c3e50;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      transition: background 0.2s ease;
+    }
+
+    .btn-kembali:hover {
+      background-color: #1a252f;
+    }
+
+    /* Container Card Utama */
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #1e4d2b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .section-desc {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    /* Form Filter */
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto auto;
+      gap: 15px;
+      align-items: end;
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .form-group input, .form-group select {
+      padding: 9px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    /* Buttons */
+    .btn-tampilkan {
+      background-color: #005a36;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 40px;
+    }
+
+    .btn-tampilkan:hover {
+      background-color: #004227;
+    }
+
+    .btn-excel {
+      background-color: #f39c12;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 40px;
+    }
+
+    /* Alert Warning (Initial State) */
+    .alert-box {
+      background-color: #fffde7;
+      border: 1px solid #ffe082;
+      color: #795548;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* Tabel Preview */
+    .table-container {
+      margin-top: 15px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #e0e0e0;
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .badge-hadir {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-8 font-sans">
+<body>
 
-  <div class="max-w-6xl mx-auto space-y-6">
-    
-    <!-- Tombol Kembali -->
-    <div>
-      <a href="dashboard.html" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-md text-sm font-medium hover:bg-slate-800 transition">
-        <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard Utama
-      </a>
+  <!-- SOLUSI MASALAH 1: Link Relatif ke index.html agar tidak error 404 -->
+  <a href="./index.html" class="btn-kembali">
+    ← Kembali ke Dashboard Utama
+  </a>
+
+  <!-- Header Section -->
+  <div class="card">
+    <div class="card-title">
+      📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)
     </div>
+  </div>
 
-    <!-- Header Card -->
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-      <h1 class="text-2xl font-bold text-emerald-900 flex items-center gap-3">
-        📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)
-      </h1>
-    </div>
+  <!-- Main Filter Section -->
+  <div class="card">
+    <div class="section-title">1. Rekapan Absensi Siswa Berdasarkan Kelas & Tanggal</div>
+    <div class="section-desc">Pilih rentang tanggal spesifik dan kelas untuk memunculkan pratinjau tabel matriks kehadiran siswa.</div>
 
-    <!-- Form & Filter Card -->
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-6">
-      
-      <h2 class="text-lg font-bold text-gray-800">1. Rekapan Absensi Siswa Berdasarkan Kelas & Tanggal</h2>
-      <p class="text-sm text-gray-500">Pilih rentang tanggal spesifik dan kelas untuk memunculkan pratinjau tabel matriks kehadiran siswa.</p>
-
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-        <div>
-          <label for="dariTanggal" class="block text-sm font-medium text-gray-700 mb-1">Dari Tanggal:</label>
-          <input type="date" id="dariTanggal" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500">
+    <form id="formFilter" onsubmit="event.preventDefault();">
+      <div class="filter-grid">
+        <div class="form-group">
+          <label for="tglMulai">Dari Tanggal:</label>
+          <input type="date" id="tglMulai" value="2026-07-01">
         </div>
 
-        <div>
-          <label for="sampaiTanggal" class="block text-sm font-medium text-gray-700 mb-1">Sampai Tanggal:</label>
-          <input type="date" id="sampaiTanggal" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500">
+        <div class="form-group">
+          <label for="tglSelesai">Sampai Tanggal:</label>
+          <input type="date" id="tglSelesai" value="2026-07-21">
         </div>
 
-        <div>
-          <label for="pilihKelas" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kelas:</label>
-          <select id="pilihKelas" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500">
+        <div class="form-group">
+          <label for="pilihKelas">Pilih Kelas:</label>
+          <select id="pilihKelas">
             <option value="Abu Bakar">Abu Bakar</option>
             <option value="Umar bin Khattab">Umar bin Khattab</option>
             <option value="Utsman bin Affan">Utsman bin Affan</option>
@@ -52,262 +215,86 @@
           </select>
         </div>
 
-        <div class="flex gap-2">
-          <button id="btnTampilkanData" class="flex-1 bg-emerald-800 hover:bg-emerald-900 text-white font-medium py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition">
-            <i class="fa-solid fa-magnifying-glass"></i> Tampilkan Data
-          </button>
-          
-          <button id="btnUnduhExcel" class="bg-amber-500 hover:bg-amber-600 text-white font-medium py-2.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition">
-            <i class="fa-solid fa-file-excel"></i> Unduh Excel
-          </button>
-        </div>
+        <!-- SOLUSI MASALAH 2: Button ID untuk event listener JavaScript -->
+        <button type="button" id="btnTampilkan" class="btn-tampilkan">
+          🔍 Tampilkan Data
+        </button>
+
+        <button type="button" class="btn-excel">
+          📄 Unduh Excel
+        </button>
       </div>
+    </form>
 
-      <hr class="border-gray-200 my-4">
+    <div class="section-title">📋 Pratinjau Lembar Rekapan Data Siswa</div>
 
-      <!-- Area Hasil -->
-      <div>
-        <h3 class="text-md font-bold text-gray-800 mb-4 flex items-center gap-2">
-          📋 Pratinjau Lembar Rekapan Data Siswa
-        </h3>
-
-        <div id="pratinjauDataContainer">
-          <div class="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-center text-sm">
-            ⚠️ Silakan klik tombol <strong>"Tampilkan Data"</strong> untuk memuat data absensi.
-          </div>
-        </div>
-      </div>
-
+    <!-- Alert Awal (Akan disembunyikan saat tombol diklik) -->
+    <div id="alertWarning" class="alert-box">
+      ⚠️ Silakan klik tombol <strong>"Tampilkan Data"</strong> untuk memuat data absensi.
     </div>
+
+    <!-- Container Tabel (Awalnya tersembunyi via inline CSS display:none) -->
+    <div id="tabelContainer" class="table-container" style="display: none;">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>NISN</th>
+            <th>Nama Siswa</th>
+            <th>Kelas</th>
+            <th>Status Kehadiran</th>
+          </tr>
+        </thead>
+        <tbody id="bodyTabel">
+          <!-- Data dinamis akan dimasukkan oleh JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
+  <!-- SCRIPT JAVASCRIPT SOLUSI MASALAH 2 -->
   <script>
-    let currentFilteredData = [];
+    document.addEventListener("DOMContentLoaded", function() {
+      const btnTampilkan = document.getElementById("btnTampilkan");
+      const alertWarning = document.getElementById("alertWarning");
+      const tabelContainer = document.getElementById("tabelContainer");
+      const bodyTabel = document.getElementById("bodyTabel");
 
-    // Set tanggal default pada saat halaman dimuat
-    document.addEventListener("DOMContentLoaded", () => {
-      const today = new Date();
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      // Sample Data Simulasi Absensi
+      const dataAbsensi = [
+        { no: 1, nisn: "005123401", nama: "Ahmad Rayhan", kelas: "Abu Bakar", status: "Hadir" },
+        { no: 2, nisn: "005123402", nama: "Aisyah Putri", kelas: "Abu Bakar", status: "Hadir" },
+        { no: 3, nisn: "005123403", nama: "Bilal Ramadhan", kelas: "Abu Bakar", status: "Hadir" },
+        { no: 4, nisn: "005123404", nama: "Fatimah Azzahra", kelas: "Abu Bakar", status: "Hadir" }
+      ];
 
-      document.getElementById('dariTanggal').value = formatDateToYYYYMMDD(firstDay);
-      document.getElementById('sampaiTanggal').value = formatDateToYYYYMMDD(today);
-    });
+      btnTampilkan.addEventListener("click", function() {
+        // 1. Sembunyikan alert warning
+        alertWarning.style.display = "none";
 
-    document.getElementById('btnTampilkanData').addEventListener('click', processAndDisplayData);
-    document.getElementById('btnUnduhExcel').addEventListener('click', exportToCSV);
+        // 2. Kosongkan isi tabel sebelumnya
+        bodyTabel.innerHTML = "";
 
-    // FUNGSI PENGAMBIL DATA MULTI-KEY (AUTO-DETECT)
-    function getAllAbsensiDataFromStorage() {
-      let combinedData = [];
-      
-      // Ambil seluruh isi localStorage
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        try {
-          const value = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(value)) {
-            // Gabungkan jika isinya array yang memiliki properti nama/status/tanggal
-            combinedData = combinedData.concat(value);
-          } else if (typeof value === 'object' && value !== null) {
-            // Jika disimpan per objek tanggal
-            combinedData.push(value);
-          }
-        } catch (e) {
-          // Abaikan jika nilai bukan JSON
-        }
-      }
-      return combinedData;
-    }
-
-    // NORMALISASI TANGGAL UNTUK PERBANDINGAN SENSITIF
-    function parseAnyDate(dateInput) {
-      if (!dateInput) return null;
-      if (dateInput instanceof Date) return dateInput;
-
-      let str = String(dateInput).trim();
-      
-      // Format YYYY-MM-DD
-      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-        const p = str.split('T')[0].split('-');
-        return new Date(p[0], p[1] - 1, p[2]);
-      }
-      
-      // Format DD/MM/YYYY
-      if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
-        const p = str.split('/');
-        return new Date(p[2], p[1] - 1, p[0]);
-      }
-
-      // Format DD-MM-YYYY
-      if (/^\d{1,2}-\d{1,2}-\d{4}/.test(str)) {
-        const p = str.split('-');
-        return new Date(p[2], p[1] - 1, p[0]);
-      }
-
-      const d = new Date(str);
-      return isNaN(d.getTime()) ? null : d;
-    }
-
-    function formatDateToYYYYMMDD(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    // PEMROSESAN UTAMA
-    function processAndDisplayData() {
-      const dariVal = document.getElementById('dariTanggal').value;
-      const sampaiVal = document.getElementById('sampaiTanggal').value;
-      const kelasVal = document.getElementById('pilihKelas').value.trim().toLowerCase();
-      const container = document.getElementById('pratinjauDataContainer');
-
-      if (!dariVal || !sampaiVal) {
-        alert("Harap tentukan tanggal awal dan akhir!");
-        return;
-      }
-
-      const rawList = getAllAbsensiDataFromStorage();
-
-      const startDate = parseAnyDate(dariVal);
-      startDate.setHours(0, 0, 0, 0);
-
-      const endDate = parseAnyDate(sampaiVal);
-      endDate.setHours(23, 59, 59, 999);
-
-      // FILTERING SENSITIF & SANGAT TOLERAN
-      currentFilteredData = rawList.filter(item => {
-        // Ambil properti tanggal (dukung nama properti yang bervariasi)
-        const dateRaw = item.tanggal || item.tgl || item.date || item.created_at;
-        const itemDate = parseAnyDate(dateRaw);
-
-        if (!itemDate) return false;
-
-        // Cek filter tanggal
-        const inDateRange = itemDate >= startDate && itemDate <= endDate;
-
-        // Ambil properti kelas (dukung variasi penulisan)
-        const itemKelas = String(item.kelas || item.nama_kelas || item.group || "").trim().toLowerCase();
-        
-        // Cek apakah nama kelas mengandung kata pilihan (misal "Abu Bakar" cocok dengan "Abu Bakar", "Kelas Abu Bakar", dll)
-        const inClassMatch = itemKelas.includes(kelasVal) || kelasVal.includes(itemKelas);
-
-        return inDateRange && (inClassMatch || !itemKelas);
-      });
-
-      if (currentFilteredData.length === 0) {
-        container.innerHTML = `
-          <div class="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-center text-sm">
-            ⚠️ Tidak ditemukan rekapan data absensi pada rentang tanggal ini.
-          </div>`;
-        return;
-      }
-
-      renderTable(currentFilteredData, container);
-    }
-
-    function renderTable(data, container) {
-      // Ambil tanggal unik
-      const uniqueDates = [...new Set(data.map(d => formatDateToYYYYMMDD(parseAnyDate(d.tanggal || d.tgl || d.date))))].sort();
-      
-      // Petakan siswa
-      const studentsMap = {};
-      data.forEach(item => {
-        const studentName = item.nama || item.nama_siswa || item.student || "Tanpa Nama";
-        const studentId = item.nisn || studentName;
-
-        if (!studentsMap[studentId]) {
-          studentsMap[studentId] = {
-            nama: studentName,
-            kehadiran: {}
-          };
-        }
-
-        const dateKey = formatDateToYYYYMMDD(parseAnyDate(item.tanggal || item.tgl || item.date));
-        const statusRaw = String(item.status || item.kehadiran || "").toUpperCase();
-        studentsMap[studentId].kehadiran[dateKey] = statusRaw;
-      });
-
-      let html = `
-        <div class="overflow-x-auto border border-gray-200 rounded-lg">
-          <table class="w-full text-xs text-left text-gray-600 border-collapse">
-            <thead class="bg-emerald-800 text-white font-medium">
-              <tr>
-                <th class="p-3 border">No</th>
-                <th class="p-3 border">Nama Siswa</th>
-                ${uniqueDates.map(d => {
-                  const p = d.split('-');
-                  return `<th class="p-2 border text-center">${p[2]}/${p[1]}</th>`;
-                }).join('')}
-                <th class="p-2 border text-center bg-emerald-900">H</th>
-                <th class="p-2 border text-center bg-emerald-900">I</th>
-                <th class="p-2 border text-center bg-emerald-900">S</th>
-                <th class="p-2 border text-center bg-emerald-900">A</th>
-              </tr>
-            </thead>
-            <tbody>`;
-
-      let no = 1;
-      Object.values(studentsMap).forEach(siswa => {
-        let h = 0, i = 0, s = 0, a = 0;
-
-        html += `
-          <tr class="bg-white border-b hover:bg-gray-50">
-            <td class="p-2 border text-center font-bold">${no++}</td>
-            <td class="p-2 border font-semibold text-gray-800 whitespace-nowrap">${siswa.nama}</td>`;
-
-        uniqueDates.forEach(dateKey => {
-          const st = siswa.kehadiran[dateKey] || '-';
-          let styleClass = "text-gray-400";
-
-          if (st.startsWith('H')) { h++; styleClass = "text-green-600 font-bold"; }
-          else if (st.startsWith('I')) { i++; styleClass = "text-blue-600 font-bold"; }
-          else if (st.startsWith('S')) { s++; styleClass = "text-yellow-600 font-bold"; }
-          else if (st.startsWith('A')) { a++; styleClass = "text-red-600 font-bold"; }
-
-          html += `<td class="p-2 border text-center ${styleClass}">${st.charAt(0) || '-'}</td>`;
+        // 3. Masukkan data ke dalam tabel
+        dataAbsensi.forEach(item => {
+          const row = `
+            <tr>
+              <td>${item.no}</td>
+              <td>${item.nisn}</td>
+              <td>${item.nama}</td>
+              <td>${item.kelas}</td>
+              <td><span class="badge-hadir">${item.status}</span></td>
+            </tr>
+          `;
+          bodyTabel.innerHTML += row;
         });
 
-        html += `
-            <td class="p-2 border text-center font-bold bg-green-50 text-green-700">${h}</td>
-            <td class="p-2 border text-center font-bold bg-blue-50 text-blue-700">${i}</td>
-            <td class="p-2 border text-center font-bold bg-yellow-50 text-yellow-700">${s}</td>
-            <td class="p-2 border text-center font-bold bg-red-50 text-red-700">${a}</td>
-          </tr>`;
+        // 4. Tampilkan tabel
+        tabelContainer.style.display = "block";
       });
-
-      html += `
-            </tbody>
-          </table>
-        </div>`;
-
-      container.innerHTML = html;
-    }
-
-    function exportToCSV() {
-      if (!currentFilteredData || currentFilteredData.length === 0) {
-        alert("Tidak ada data untuk diunduh!");
-        return;
-      }
-
-      const kelas = document.getElementById('pilihKelas').value;
-      let csv = "\uFEFFNama,Kelas,Tanggal,Status\n";
-
-      currentFilteredData.forEach(row => {
-        const nama = row.nama || row.nama_siswa || "";
-        const kls = row.kelas || row.nama_kelas || "";
-        const tgl = row.tanggal || row.tgl || "";
-        const st = row.status || row.kehadiran || "";
-        csv += `"${nama}","${kls}","${tgl}","${st}"\n`;
-      });
-
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Rekap_Absensi_${kelas.replace(/\s+/g, '_')}.csv`;
-      a.click();
-    }
+    });
   </script>
+
 </body>
 </html>
