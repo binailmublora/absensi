@@ -299,15 +299,23 @@ function getRekapAbsensiKelas(requestData) {
     });
     var idxNama = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("nama") !== -1; });
     var idxKelas = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("kelas") !== -1; });
+    var idxJabatan = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("jabatan") !== -1; });
     var idxStatus = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("status") !== -1; });
     var idxJam = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("jam") !== -1; });
+    var idxMetode = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("metode") !== -1; });
+    var idxDiinput = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("diinput") !== -1; });
+    var idxKet = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("keterangan") !== -1; });
 
     if (idxTgl === -1) idxTgl = 0;
     if (idxId === -1) idxId = 1;
     if (idxNama === -1) idxNama = 2;
     if (idxKelas === -1) idxKelas = 3;
+    if (idxJabatan === -1) idxJabatan = 3;
     if (idxStatus === -1) idxStatus = 4;
     if (idxJam === -1) idxJam = 5;
+    if (idxMetode === -1) idxMetode = 6;
+    if (idxDiinput === -1) idxDiinput = 7;
+    if (idxKet === -1) idxKet = 8;
 
     var rekapFiltered = [];
 
@@ -318,7 +326,7 @@ function getRekapAbsensiKelas(requestData) {
       var valKelas = row[idxKelas] ? row[idxKelas].toString().trim().toLowerCase().replace(/\s+/g, '') : "";
 
       // Pemfilteran Kelas & ID Siswa
-      var matchKelas = (kelasInput === "" || kelasInput === "semua" || valKelas === kelasInput || valKelas.indexOf(kelasInput) !== -1);
+      var matchKelas = (sheetName === "Absensi_Guru" || kelasInput === "" || kelasInput === "semua" || valKelas === kelasInput || valKelas.indexOf(kelasInput) !== -1);
       var matchSiswa = (idSiswaInput === "" || valId === idSiswaInput);
 
       if (matchKelas && matchSiswa && rawTgl) {
@@ -333,15 +341,31 @@ function getRekapAbsensiKelas(requestData) {
         if (endTimestamp && rowTimestamp > endTimestamp) inRange = false;
 
         if (inRange) {
-          rekapFiltered.push({
-            tanggal: uniformTglStr,
-            tgl: uniformTglStr,
-            id_siswa: valId,
-            nama: row[idxNama] ? row[idxNama].toString().trim() : "",
-            kelas: row[idxKelas] ? row[idxKelas].toString().trim() : "",
-            status: row[idxStatus] ? row[idxStatus].toString().trim().toUpperCase().substring(0, 1) : "H",
-            jam: row[idxJam] ? row[idxJam].toString().trim() : "-"
-          });
+          if (sheetName === "Absensi_Guru") {
+            rekapFiltered.push({
+              "Tanggal": uniformTglStr,
+              "ID_Guru": valId,
+              "Nama": row[idxNama] ? row[idxNama].toString().trim() : "",
+              "Jabatan": row[idxJabatan] ? row[idxJabatan].toString().trim() : "",
+              "Status": row[idxStatus] ? row[idxStatus].toString().trim() : "",
+              "Jam": formatJam(row[idxJam]),
+              "Metode": row[idxMetode] ? row[idxMetode].toString().trim() : "-",
+              "Diinput_Oleh": row[idxDiinput] ? row[idxDiinput].toString().trim() : "-",
+              "Keterangan": row[idxKet] ? row[idxKet].toString().trim() : "-"
+            });
+          } else {
+            // Absensi_Siswa
+            rekapFiltered.push({
+              "Tanggal": uniformTglStr,
+              "ID_Siswa": valId,
+              "Nama": row[idxNama] ? row[idxNama].toString().trim() : "",
+              "Kelas": row[idxKelas] ? row[idxKelas].toString().trim() : "",
+              "Status": row[idxStatus] ? row[idxStatus].toString().trim().toUpperCase().substring(0, 1) : "H",
+              "Jam": formatJam(row[idxJam]),
+              "Metode": row[idxMetode] ? row[idxMetode].toString().trim() : "-",
+              "Diinput_Oleh": row[idxDiinput] ? row[idxDiinput].toString().trim() : "-"
+            });
+          }
         }
       }
     }
@@ -847,6 +871,29 @@ function formatTanggalYYYYMMDD(val) {
       if (p[0].length === 4) return p[0] + "-" + p[1] + "-" + p[2];
       return p[2] + "-" + String(p[0]).padStart(2, '0') + "-" + String(p[1]).padStart(2, '0');
     }
+  }
+  return str;
+}
+
+function formatJam(val) {
+  if (!val) return "-";
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, Session.getScriptTimeZone(), "HH:mm:ss");
+  }
+  var str = val.toString().trim();
+  // Check if it's already a clean time format (e.g. "HH:mm:ss")
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(str)) {
+    return str;
+  }
+  // Check if it contains GMT timezone or Date string
+  if (str.indexOf("GMT") !== -1 || str.indexOf("1899") !== -1 || str.indexOf(":") !== -1) {
+    // Try parsing as Date
+    try {
+      var d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        return Utilities.formatDate(d, Session.getScriptTimeZone(), "HH:mm:ss");
+      }
+    } catch(e) {}
   }
   return str;
 }
