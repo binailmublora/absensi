@@ -1,284 +1,309 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pusat Laporan & Export Data - E-Absensi</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    :root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; --text-main: #2d3748; }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); padding: 20px; color: var(--text-main); }
-    .container { max-width: 1000px; margin: 0 auto; }
-    .btn-back { text-decoration: none; color: var(--primary); font-weight: 600; font-size: 14px; display: inline-block; margin-bottom: 15px; }
-    .card { background: var(--white); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
-    .box-flex { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 15px; margin-bottom: 15px; }
-    .box-flex label { font-size: 12px; font-weight: 600; color: #64748b; }
-    .filter-group { display: flex; flex-direction: column; gap: 4px; }
-    select, input[type="date"], button { padding: 12px 16px; border-radius: 8px; font-size: 14px; }
-    select, input[type="date"] { border: 1px solid #dcdfdc; width: 175px; background: #fff; font-family: inherit; }
-    button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    button.btn-accent { background: var(--accent); }
-    button:hover { opacity: 0.9; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { padding: 10px 8px; border: 1px solid #e2e8f0; font-size: 12px; text-align: left; white-space: nowrap; }
-    th { background: #f8fafc; color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 11px; }
-    tr:nth-child(even) { background-color: #f8fafc; }
-    
-    /* Area Pratinjau Terpisah */
-    .preview-box { display: none; margin-top: 25px; border-top: 2px dashed #e2e8f0; padding-top: 20px; }
-    
-    /* Warna Status Absensi Matriks */
-    .st-masuk { color: #155724; font-weight: bold; background-color: #e2f0d9; text-align: center; }
-    .st-sakit { color: #856404; font-weight: bold; background-color: #fff3cd; text-align: center; }
-    .st-alpha { color: #721c24; font-weight: bold; background-color: #f8d7da; text-align: center; }
-    .st-belum { color: #94a3b8; font-style: italic; background-color: #f1f5f9; text-align: center; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pusat Laporan & Export Data - E-Absensi</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root { --primary: #0f5132; --accent: #e5a93b; --bg: #f4f7f5; --white: #ffffff; --text-main: #2d3748; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); padding: 20px; color: var(--text-main); }
+.container { max-width: 1000px; margin: 0 auto; }
+.btn-back { text-decoration: none; color: var(--primary); font-weight: 600; font-size: 14px; display: inline-block; margin-bottom: 15px; }
+.card { background: var(--white); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
+.box-flex { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 15px; margin-bottom: 15px; }
+.box-flex label { font-size: 12px; font-weight: 600; color: #64748b; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+select, input[type="date"], button { padding: 12px 16px; border-radius: 8px; font-size: 14px; }
+select, input[type="date"] { border: 1px solid #dcdfdc; width: 175px; background: #fff; font-family: inherit; }
+button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+button.btn-accent { background: var(--accent); }
+button:hover { opacity: 0.9; }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { padding: 10px 8px; border: 1px solid #e2e8f0; font-size: 12px; text-align: left; white-space: nowrap; }
+th { background: #f8fafc; color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 11px; }
+tr:nth-child(even) { background-color: #f8fafc; }
+
+/* Area Pratinjau Terpisah */
+.preview-box { display: none; margin-top: 25px; border-top: 2px dashed #e2e8f0; padding-top: 20px; }
+
+/* Warna Status Absensi Matriks */
+.st-masuk { color: #155724; font-weight: bold; background-color: #e2f0d9; text-align: center; }
+.st-sakit { color: #856404; font-weight: bold; background-color: #fff3cd; text-align: center; }
+.st-alpha { color: #721c24; font-weight: bold; background-color: #f8d7da; text-align: center; }
+.st-belum { color: #94a3b8; font-style: italic; background-color: #f1f5f9; text-align: center; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <a href="#" class="btn-back" onclick="kembaliKeDashboard()">⬅️ Kembali ke Dashboard Utama</a>
-    
-    <h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)</h1>
+<div class="container">
+<a href="#" class="btn-back" onclick="kembaliKeDashboard()">⬅️ Kembali ke Dashboard Utama</a>
 
-    <!-- BLOK 1: REKAPAN SISWA -->
-    <div class="card" id="aksesSiswa" style="display:none;">
-      <h2>1. Rekapan Absensi Siswa Berdasarkan Kelas & Tanggal</h2>
-      <p style="font-size: 13px; color: #64748b;">Pilih rentang tanggal spesifik dan kelas untuk memunculkan pratinjau tabel matriks kehadiran siswa.</p>
-      <div class="box-flex">
-        <div class="filter-group">
-          <label>Dari Tanggal:</label>
-          <input type="date" id="tglMulaiSiswa">
-        </div>
-        <div class="filter-group">
-          <label>Sampai Tanggal:</label>
-          <input type="date" id="tglSelesaiSiswa">
-        </div>
-        <div class="filter-group">
-          <label>Pilih Kelas:</label>
-          <select id="kelasSiswa">
-            <option value="">Memuat kelas...</option>
-          </select>
-        </div>
-        <div class="filter-group" style="margin-top: 18px;">
-          <button onclick="prosesRekap('Siswa')">🔍 Tampilkan Data</button>
-        </div>
-        <div class="filter-group" style="margin-top: 18px;">
-          <button class="btn-accent" onclick="unduhExcel('Siswa')">📥 Unduh Excel</button>
-        </div>
-      </div>
+<h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)</h1>
 
-      <!-- POSISI BARU: Pratinjau Siswa Naik Ke Sini -->
-      <div class="preview-box" id="boxPreviewSiswa">
-        <h3 style="color: var(--primary); margin-bottom: 10px;">📋 Pratinjau Lembar Rekapan Data Siswa</h3>
-        <div style="overflow-x: auto;">
-          <table id="tabelPreviewSiswa">
-            <thead><tr id="thPreviewSiswa"></tr></thead>
-            <tbody id="tbPreviewSiswa"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+<!-- BLOK 1: REKAPAN SISWA -->
+<div class="card" id="aksesSiswa" style="display:none;">
+<h2>1. Rekapan Absensi Siswa Berdasarkan Kelas & Tanggal</h2>
+<p style="font-size: 13px; color: #64748b;">Pilih rentang tanggal spesifik dan kelas untuk memunculkan pratinjau tabel matriks kehadiran siswa.</p>
+<div class="box-flex">
+<div class="filter-group">
+<label>Dari Tanggal:</label>
+<input type="date" id="tglMulaiSiswa">
+</div>
+<div class="filter-group">
+<label>Sampai Tanggal:</label>
+<input type="date" id="tglSelesaiSiswa">
+</div>
+<div class="filter-group">
+<label>Pilih Kelas:</label>
+<select id="kelasSiswa">
+<option value="">Memuat kelas...</option>
+</select>
+</div>
+<div class="filter-group" style="margin-top: 18px;">
+<button onclick="prosesRekap('Siswa')">🔍 Tampilkan Data</button>
+</div>
+<div class="filter-group" style="margin-top: 18px;">
+<button class="btn-accent" onclick="unduhExcel('Siswa')">📥 Unduh Excel</button>
+</div>
+</div>
 
-    <!-- BLOK 2: REKAPAN GURU -->
-    <div class="card" id="aksesKepsek" style="display:none;">
-      <h2>2. Rekapan Komprehensif Kehadiran Guru</h2>
-      <p style="font-size: 13px; color: #64748b;">Menu eksklusif Kepala Sekolah untuk melacak keaktifan harian seluruh guru.</p>
-      <div class="box-flex">
-        <div class="filter-group">
-          <label>Dari Tanggal:</label>
-          <input type="date" id="tglMulaiGuru">
-        </div>
-        <div class="filter-group">
-          <label>Sampai Tanggal:</label>
-          <input type="date" id="tglSelesaiGuru">
-        </div>
-        <div class="filter-group" style="margin-top: 18px;">
-          <button onclick="prosesRekap('Guru')">🔍 Tampilkan Data</button>
-        </div>
-        <div class="filter-group" style="margin-top: 18px;">
-          <button class="btn-accent" onclick="unduhExcel('Guru')">📥 Unduh Excel</button>
-        </div>
-      </div>
+<!-- POSISI BARU: Pratinjau Siswa Naik Ke Sini -->
+<div class="preview-box" id="boxPreviewSiswa">
+<h3 style="color: var(--primary); margin-bottom: 10px;">📋 Pratinjau Lembar Rekapan Data Siswa</h3>
+<div style="overflow-x: auto;">
+<table id="tabelPreviewSiswa">
+<thead><tr id="thPreviewSiswa"></tr></thead>
+<tbody id="tbPreviewSiswa"></tbody>
+</table>
+</div>
+</div>
+</div>
 
-      <!-- POSISI BARU: Pratinjau Guru Berada Di Sini -->
-      <div class="preview-box" id="boxPreviewGuru">
-        <h3 style="color: var(--primary); margin-bottom: 10px;">📋 Pratinjau Lembar Rekapan Data Guru</h3>
-        <div style="overflow-x: auto;">
-          <table id="tabelPreviewGuru">
-            <thead><tr id="thPreviewGuru"></tr></thead>
-            <tbody id="tbPreviewGuru"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
+<!-- BLOK 2: REKAPAN GURU -->
+<div class="card" id="aksesKepsek" style="display:none;">
+<h2>2. Rekapan Komprehensif Kehadiran Guru</h2>
+<p style="font-size: 13px; color: #64748b;">Menu eksklusif Kepala Sekolah untuk melacak keaktifan harian seluruh guru.</p>
+<div class="box-flex">
+<div class="filter-group">
+<label>Dari Tanggal:</label>
+<input type="date" id="tglMulaiGuru">
+</div>
+<div class="filter-group">
+<label>Sampai Tanggal:</label>
+<input type="date" id="tglSelesaiGuru">
+</div>
+<div class="filter-group" style="margin-top: 18px;">
+<button onclick="prosesRekap('Guru')">🔍 Tampilkan Data</button>
+</div>
+<div class="filter-group" style="margin-top: 18px;">
+<button class="btn-accent" onclick="unduhExcel('Guru')">📥 Unduh Excel</button>
+</div>
+</div>
 
-  <script>
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycby7MTGCJEo0EH6p8kwk0MDmROw9rkd1lJDBjBP2GhDGyCMiLkQfbnIJCNCN7rIn8E5Q3Q/exec";
-    const ROLE = localStorage.getItem('user_role');
-    
-    let dataSiswaTerunduh = [];
-    let dataGuruTerunduh = [];
+<!-- POSISI BARU: Pratinjau Guru Berada Di Sini -->
+<div class="preview-box" id="boxPreviewGuru">
+<h3 style="color: var(--primary); margin-bottom: 10px;">📋 Pratinjau Lembar Rekapan Data Guru</h3>
+<div style="overflow-x: auto;">
+<table id="tabelPreviewGuru">
+<thead><tr id="thPreviewGuru"></tr></thead>
+<tbody id="tbPreviewGuru"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
 
-    // Mengatur default tanggal kalender (Tanggal 1 bulan ini s/d hari ini)
-    function setFormatTanggalDefault() {
-      const hariIni = new Date();
-      const yyyy = hariIni.getFullYear();
-      const mm = String(hariIni.getMonth() + 1).padStart(2, '0');
-      const dd = String(hariIni.getDate()).padStart(2, '0');
-      
-      const formatHariIni = `${yyyy}-${mm}-${dd}`;
-      const formatAwalBulan = `${yyyy}-${mm}-01`;
+<script>
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycby7MTGCJEo0EH6p8kwk0MDmROw9rkd1lJDBjBP2GhDGyCMiLkQfbnIJCNCN7rIn8E5Q3Q/exec";
+const ROLE = localStorage.getItem('user_role');
 
-      if(document.getElementById('tglMulaiSiswa')) document.getElementById('tglMulaiSiswa').value = formatAwalBulan;
-      if(document.getElementById('tglMulaiGuru')) document.getElementById('tglMulaiGuru').value = formatAwalBulan;
-      if(document.getElementById('tglSelesaiSiswa')) document.getElementById('tglSelesaiSiswa').value = formatHariIni;
-      if(document.getElementById('tglSelesaiGuru')) document.getElementById('tglSelesaiGuru').value = formatHariIni;
-    }
+let dataSiswaTerunduh = [];
+let dataGuruTerunduh = [];
 
-    function konfigurasiHakAksesAplikasi() {
-      if (!ROLE) {
-        window.location.href = 'index.html';
-        return;
-      }
-      
-      if (ROLE === 'KepalaSekolah') {
-        document.getElementById('aksesSiswa').style.display = 'block';
-        document.getElementById('aksesKepsek').style.display = 'block';
-      } else if (ROLE === 'Guru') {
-        document.getElementById('aksesSiswa').style.display = 'block';
-        document.getElementById('aksesKepsek').style.display = 'none';
-      } else if (ROLE === 'OrangTua') {
-        alert("Akses dialihkan menuju dashboard riwayat personal siswa.");
+// Mengatur default tanggal kalender (Tanggal 1 bulan ini s/d hari ini)
+function setFormatTanggalDefault() {
+const hariIni = new Date();
+const yyyy = hariIni.getFullYear();
+const mm = String(hariIni.getMonth() + 1).padStart(2, '0');
+const dd = String(hariIni.getDate()).padStart(2, '0');
+
+const formatHariIni = `${yyyy}-${mm}-${dd}`;
+const formatAwalBulan = `${yyyy}-${mm}-01`;
+
+if(document.getElementById('tglMulaiSiswa')) document.getElementById('tglMulaiSiswa').value = formatAwalBulan;
+if(document.getElementById('tglMulaiGuru')) document.getElementById('tglMulaiGuru').value = formatAwalBulan;
+if(document.getElementById('tglSelesaiSiswa')) document.getElementById('tglSelesaiSiswa').value = formatHariIni;
+if(document.getElementById('tglSelesaiGuru')) document.getElementById('tglSelesaiGuru').value = formatHariIni;
+}
+
+function konfigurasiHakAksesAplikasi() {
+if (!ROLE) {
+window.location.href = 'index.html';
+return;
+}
+
+if (ROLE === 'KepalaSekolah') {
+document.getElementById('aksesSiswa').style.display = 'block';
+document.getElementById('aksesKepsek').style.display = 'block';
+} else if (ROLE === 'Guru') {
+document.getElementById('aksesSiswa').style.display = 'block';
+document.getElementById('aksesKepsek').style.display = 'none';
+} else if (ROLE === 'OrangTua') {
+alert("Akses dialihkan menuju dashboard riwayat personal siswa.");
         window.location.href = 'dashboard-wali.html';
-      }
-    }
+        window.location.href = 'dashboard-orangtua.html';
+}
+}
 
-    function memuatDaftarKelasOtomatis() {
-      fetch(BACKEND_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getDaftarKelas' })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Backend return status not ok");
-        return res.json();
-      })
-      .then(res => {
-        const selectKelas = document.getElementById('kelasSiswa');
-        if (res && res.ok && res.kelas && res.kelas.length > 0) {
-          selectKelas.innerHTML = res.kelas.map(kls => `<option value="${kls}">${kls}</option>`).join('');
-        } else {
-          selectKelas.innerHTML = `<option value="">Tidak ada data kelas</option>`;
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById('kelasSiswa').innerHTML = `<option value="">Gagal Sinkronisasi Kelas</option>`;
-      });
-    }
+function memuatDaftarKelasOtomatis() {
+fetch(BACKEND_URL, {
+method: 'POST',
+mode: 'cors',
+headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+body: JSON.stringify({ action: 'getDaftarKelas' })
+})
+.then(res => {
+if (!res.ok) throw new Error("Backend return status not ok");
+return res.json();
+})
+.then(res => {
+const selectKelas = document.getElementById('kelasSiswa');
+if (res && res.ok && res.kelas && res.kelas.length > 0) {
+selectKelas.innerHTML = res.kelas.map(kls => `<option value="${kls}">${kls}</option>`).join('');
+} else {
+selectKelas.innerHTML = `<option value="">Tidak ada data kelas</option>`;
+}
+})
+.catch(err => {
+console.error(err);
+document.getElementById('kelasSiswa').innerHTML = `<option value="">Gagal Sinkronisasi Kelas</option>`;
+});
+}
 
-    function kembaliKeDashboard() {
-      if(ROLE === 'KepalaSekolah') window.location.href = 'dashboard-kepsek.html';
-      else if(ROLE === 'Guru') window.location.href = 'dashboard-guru.html';
-      else window.location.href = 'index.html';
-    }
+function kembaliKeDashboard() {
+if(ROLE === 'KepalaSekolah') window.location.href = 'dashboard-kepsek.html';
+else if(ROLE === 'Guru') window.location.href = 'dashboard-guru.html';
+else window.location.href = 'index.html';
+}
 
-    function prosesRekap(tipe) {
-      let tMulai, tSelesai, kelasPilihan = "";
-      
-      if (tipe === 'Siswa') {
-        tMulai = document.getElementById('tglMulaiSiswa').value;
-        tSelesai = document.getElementById('tglSelesaiSiswa').value;
-        kelasPilihan = document.getElementById('kelasSiswa').value;
-      } else {
-        tMulai = document.getElementById('tglMulaiGuru').value;
-        tSelesai = document.getElementById('tglSelesaiGuru').value;
-      }
+function prosesRekap(tipe) {
+let tMulai, tSelesai, kelasPilihan = "";
 
-      if (!tMulai || !tSelesai) {
-        alert("Mohon tentukan pilihan tanggal mulai dan tanggal selesai terlebih dahulu!");
-        return;
-      }
+if (tipe === 'Siswa') {
+tMulai = document.getElementById('tglMulaiSiswa').value;
+tSelesai = document.getElementById('tglSelesaiSiswa').value;
+kelasPilihan = document.getElementById('kelasSiswa').value;
+} else {
+tMulai = document.getElementById('tglMulaiGuru').value;
+tSelesai = document.getElementById('tglSelesaiGuru').value;
+}
 
-      if (tMulai > tSelesai) {
-        alert("Tanggal mulai tidak boleh melebihi tanggal selesai!");
-        return;
-      }
+if (!tMulai || !tSelesai) {
+alert("Mohon tentukan pilihan tanggal mulai dan tanggal selesai terlebih dahulu!");
+return;
+}
 
-      let payload = { 
+if (tMulai > tSelesai) {
+alert("Tanggal mulai tidak boleh melebihi tanggal selesai!");
+return;
+}
+
+let payload = { 
         action: 'getRekapanBulanan', 
-        tipe: tipe, 
-        bulanMulai: tMulai, 
+        action: 'getRekapAbsensiKelas',
+tipe: tipe, 
+        tgl_mulai: tMulai,
+        tgl_selesai: tSelesai,
+        kelas: kelasPilihan,
+        // Parameter tambahan untuk kompatibilitas ke belakang
+bulanMulai: tMulai, 
         bulanSelesai: tSelesai, 
         kelas: kelasPilihan 
-      };
+        bulanSelesai: tSelesai
+};
 
-      const box = document.getElementById(`boxPreview${tipe}`);
-      const th = document.getElementById(`thPreview${tipe}`);
-      const tb = document.getElementById(`tbPreview${tipe}`);
+const box = document.getElementById(`boxPreview${tipe}`);
+const th = document.getElementById(`thPreview${tipe}`);
+const tb = document.getElementById(`tbPreview${tipe}`);
 
-      box.style.display = 'block';
-      tb.innerHTML = '<tr><td style="text-align:center; padding:20px;">🔄 Memuat lembar baris data hari kerja...</td></tr>';
+box.style.display = 'block';
+tb.innerHTML = '<tr><td style="text-align:center; padding:20px;">🔄 Memuat lembar baris data hari kerja...</td></tr>';
 
-      fetch(BACKEND_URL, { 
-        method: 'POST', 
-        mode: 'cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload) 
-      })
-      .then(res => res.json())
+fetch(BACKEND_URL, { 
+method: 'POST', 
+mode: 'cors',
+headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+body: JSON.stringify(payload) 
+})
+.then(res => res.json())
       .then(data => {
-        if (!data || !Array.isArray(data) || data.length === 0) {
-          tb.innerHTML = '<tr><td style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ditemukan rekapan data absensi pada rentang tanggal ini.</td></tr>';
+      .then(resData => {
+        // Penanganan error response eksplisit dari backend
+        if (resData && resData.ok === false) {
+          tb.innerHTML = `<tr><td style="text-align:center; color:red; padding:20px;">⚠️ Gagal memuat data: ${resData.message || 'Error tidak dikenal dari server'}</td></tr>`;
           if(tipe === 'Siswa') dataSiswaTerunduh = []; else dataGuruTerunduh = [];
           return;
         }
 
-        if(tipe === 'Siswa') dataSiswaTerunduh = data; else dataGuruTerunduh = data;
+        let data = resData;
+        // Jika response dibungkus dalam properti data atau result (standardisasi API)
+        if (resData && !Array.isArray(resData)) {
+          if (Array.isArray(resData.data)) {
+            data = resData.data;
+          } else if (Array.isArray(resData.result)) {
+            data = resData.result;
+          }
+        }
 
-        let keys = Object.keys(data[0]);
-        th.innerHTML = keys.map(k => `<th>${k}</th>`).join('');
-        
-        tb.innerHTML = data.map(row => {
-          return `<tr>${keys.map(k => {
-            let cell = row[k] !== undefined && row[k] !== null ? String(row[k]) : '-';
-            let classWarna = "";
-            
-            if (cell.toLowerCase() === "masuk") classWarna = 'class="st-masuk"';
-            else if (cell.toLowerCase() === "sakit" || cell.toLowerCase() === "izin") classWarna = 'class="st-sakit"';
-            else if (cell.toLowerCase() === "alpha" || cell.toLowerCase() === "alfa") classWarna = 'class="st-alpha"';
-            else if (cell.toLowerCase() === "belum absen") classWarna = 'class="st-belum"';
+if (!data || !Array.isArray(data) || data.length === 0) {
+tb.innerHTML = '<tr><td style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ditemukan rekapan data absensi pada rentang tanggal ini.</td></tr>';
+if(tipe === 'Siswa') dataSiswaTerunduh = []; else dataGuruTerunduh = [];
+return;
+}
 
-            return `<td ${classWarna}>${cell}</td>`;
-          }).join('')}</tr>`;
-        }).join('');
-      })
-      .catch(err => {
-        tb.innerHTML = `<tr><td style="text-align:center; color:red; padding:20px;">❌ Terjadi gangguan komunikasi server backend.</td></tr>`;
-        console.error(err);
-      });
-    }
+if(tipe === 'Siswa') dataSiswaTerunduh = data; else dataGuruTerunduh = data;
 
-    function unduhExcel(tipe) {
-      const dataArr = (tipe === 'Siswa') ? dataSiswaTerunduh : dataGuruTerunduh;
-      if(!dataArr.length) { 
-        alert('Tampilkan data terlebih dahulu ke tabel sebelum mengekspor!'); 
-        return; 
-      }
-      const worksheet = XLSX.utils.json_to_sheet(dataArr);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, `Rekap ${tipe}`);
-      XLSX.writeFile(workbook, `Laporan_Harian_${tipe}_${new Date().toISOString().split('T')[0]}.xlsx`);
-    }
+let keys = Object.keys(data[0]);
+th.innerHTML = keys.map(k => `<th>${k}</th>`).join('');
 
-    window.onload = function() {
-      setFormatTanggalDefault();
-      konfigurasiHakAksesAplikasi();
-      memuatDaftarKelasOtomatis();
-    };
-  </script>
+tb.innerHTML = data.map(row => {
+return `<tr>${keys.map(k => {
+           let cell = row[k] !== undefined && row[k] !== null ? String(row[k]) : '-';
+           let classWarna = "";
+           
+           if (cell.toLowerCase() === "masuk") classWarna = 'class="st-masuk"';
+           else if (cell.toLowerCase() === "sakit" || cell.toLowerCase() === "izin") classWarna = 'class="st-sakit"';
+           else if (cell.toLowerCase() === "alpha" || cell.toLowerCase() === "alfa") classWarna = 'class="st-alpha"';
+           else if (cell.toLowerCase() === "belum absen") classWarna = 'class="st-belum"';
+
+           return `<td ${classWarna}>${cell}</td>`;
+         }).join('')}</tr>`;
+}).join('');
+})
+.catch(err => {
+tb.innerHTML = `<tr><td style="text-align:center; color:red; padding:20px;">❌ Terjadi gangguan komunikasi server backend.</td></tr>`;
+console.error(err);
+});
+}
+
+function unduhExcel(tipe) {
+const dataArr = (tipe === 'Siswa') ? dataSiswaTerunduh : dataGuruTerunduh;
+if(!dataArr.length) { 
+alert('Tampilkan data terlebih dahulu ke tabel sebelum mengekspor!'); 
+return; 
+}
+const worksheet = XLSX.utils.json_to_sheet(dataArr);
+const workbook = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(workbook, worksheet, `Rekap ${tipe}`);
+XLSX.writeFile(workbook, `Laporan_Harian_${tipe}_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+window.onload = function() {
+setFormatTanggalDefault();
+konfigurasiHakAksesAplikasi();
+memuatDaftarKelasOtomatis();
+};
+</script>
 </body>
 </html>
