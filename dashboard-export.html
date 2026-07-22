@@ -151,7 +151,7 @@
         document.getElementById('aksesKepsek').style.display = 'none';
       } else if (ROLE === 'OrangTua') {
         alert("Akses dialihkan menuju dashboard riwayat personal siswa.");
-        window.location.href = 'dashboard-wali.html';
+        window.location.href = 'dashboard-orangtua.html';
       }
     }
 
@@ -209,11 +209,14 @@
       }
 
       let payload = { 
-        action: 'getRekapanBulanan', 
+        action: 'getRekapAbsensiKelas',
         tipe: tipe, 
+        tgl_mulai: tMulai,
+        tgl_selesai: tSelesai,
+        kelas: kelasPilihan,
+        // Parameter tambahan untuk kompatibilitas ke belakang
         bulanMulai: tMulai, 
-        bulanSelesai: tSelesai, 
-        kelas: kelasPilihan 
+        bulanSelesai: tSelesai
       };
 
       const box = document.getElementById(`boxPreview${tipe}`);
@@ -230,7 +233,24 @@
         body: JSON.stringify(payload) 
       })
       .then(res => res.json())
-      .then(data => {
+      .then(resData => {
+        // Penanganan error response eksplisit dari backend
+        if (resData && resData.ok === false) {
+          tb.innerHTML = `<tr><td style="text-align:center; color:red; padding:20px;">⚠️ Gagal memuat data: ${resData.message || 'Error tidak dikenal dari server'}</td></tr>`;
+          if(tipe === 'Siswa') dataSiswaTerunduh = []; else dataGuruTerunduh = [];
+          return;
+        }
+
+        let data = resData;
+        // Jika response dibungkus dalam properti data atau result (standardisasi API)
+        if (resData && !Array.isArray(resData)) {
+          if (Array.isArray(resData.data)) {
+            data = resData.data;
+          } else if (Array.isArray(resData.result)) {
+            data = resData.result;
+          }
+        }
+
         if (!data || !Array.isArray(data) || data.length === 0) {
           tb.innerHTML = '<tr><td style="text-align:center; color:#64748b; padding:20px;">⚠️ Tidak ditemukan rekapan data absensi pada rentang tanggal ini.</td></tr>';
           if(tipe === 'Siswa') dataSiswaTerunduh = []; else dataGuruTerunduh = [];
