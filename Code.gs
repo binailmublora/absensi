@@ -110,6 +110,16 @@ function processRequest(requestData) {
       return getDataKepsek(requestData);
     }
 
+    // 9. Ambil list guru per hari (Dashboard Kepsek / Input Absensi Guru)
+    if (action === "getAbsensiGuruPerHari" || action === "getGuruPerHari" || action === "getDaftarGuru") {
+      return getGuruList(requestData.tanggal);
+    }
+
+    // 10. Simpan rekapan absensi guru harian (Dashboard Kepsek)
+    if (action === "simpanAbsensiGuru") {
+      return simpanAbsensiGuru(requestData);
+    }
+
     return { ok: false, message: "Aksi tidak dikenal: " + action };
   } catch(err) {
     return { ok: false, message: err.toString() };
@@ -759,60 +769,26 @@ function scanAbsen(requestData) {
 // =========================================================================
 function getDataKepsek(requestData) {
   try {
-    var ss = SS_();
-    var sheetAbsensi = ss.getSheetByName("Absensi_Siswa");
-
-    var stats = { guruHadir: 0, guruAbsen: 0, siswaHadir: 0, siswaAbsen: 0 };
-    var details = { guruKeterangan: "Seluruh staf guru aktif.", siswaKeterangan: "Semua siswa terabsen hadir harian." };
-
     var tglTarget = formatTanggalYYYYMMDD(new Date());
 
-    if (sheetAbsensi) {
-      var d = sheetAbsensi.getDataRange().getValues();
-      if (d.length > 1) {
-        var headers = d[0];
-        var idxTgl = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("tanggal") !== -1; });
-        var idxStatus = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("status") !== -1; });
+    var siswaStats = getDailyStats("Absensi_Siswa", tglTarget);
+    var guruStats = getDailyStats("Absensi_Guru", tglTarget);
 
-        if (idxTgl === -1) idxTgl = 0;
-        if (idxStatus === -1) idxStatus = 4;
+    var stats = {
+      guruHadir: guruStats.hadir,
+      guruSakit: guruStats.sakit,
+      guruIzin: guruStats.izin,
+      guruAlpha: guruStats.alpha,
+      siswaHadir: siswaStats.hadir,
+      siswaSakit: siswaStats.sakit,
+      siswaIzin: siswaStats.izin,
+      siswaAlpha: siswaStats.alpha
+    };
 
-        var totalHadir = 0;
-        var totalAbsen = 0;
-        var sakit = 0, izin = 0, alpha = 0;
-
-        for (var i = 1; i < d.length; i++) {
-          var tglRow = formatTanggalYYYYMMDD(d[i][idxTgl]);
-          if (tglRow === tglTarget) {
-            var status = d[i][idxStatus] ? d[i][idxStatus].toString().trim().toUpperCase().substring(0, 1) : "";
-            if (status === "H" || status === "") {
-              totalHadir++;
-            } else {
-              totalAbsen++;
-              if (status === "S") sakit++;
-              else if (status === "I") izin++;
-              else if (status === "A") alpha++;
-            }
-          }
-        }
-
-        stats.siswaHadir = totalHadir;
-        stats.siswaAbsen = totalAbsen;
-
-        var ketSiswa = [];
-        if (sakit > 0) ketSiswa.push("Sakit: " + sakit + " anak");
-        if (izin > 0) ketSiswa.push("Izin: " + izin + " anak");
-        if (alpha > 0) ketSiswa.push("Alpha: " + alpha + " anak");
-
-        if (ketSiswa.length > 0) {
-          details.siswaKeterangan = ketSiswa.join(", ");
-        }
-      }
-    }
-
-    // Guru Stats Fallback / Default
-    stats.guruHadir = 12;
-    stats.guruAbsen = 0;
+    var details = {
+      guruKeterangan: "Hadir: " + stats.guruHadir + ", Sakit: " + stats.guruSakit + ", Izin: " + stats.guruIzin + ", Alpha: " + stats.guruAlpha,
+      siswaKeterangan: "Hadir: " + stats.siswaHadir + ", Sakit: " + stats.siswaSakit + ", Izin: " + stats.siswaIzin + ", Alpha: " + stats.siswaAlpha
+    };
 
     return {
       ok: true,
@@ -822,6 +798,204 @@ function getDataKepsek(requestData) {
   } catch(err) {
     return { ok: false, message: "Gagal memproses data Kepala Sekolah: " + err.toString() };
   }
+}
+
+function getDailyStats(sheetName, tglTarget) {
+  var stats = { hadir: 0, sakit: 0, izin: 0, alpha: 0 };
+  var ss = SS_();
+  var sheet = ss.getSheetByName(sheetName);
+  if (sheet) {
+    var d = sheet.getDataRange().getValues();
+    if (d.length > 1) {
+      var headers = d[0];
+      var idxTgl = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("tanggal") !== -1; });
+      var idxStatus = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("status") !== -1; });
+      if (idxTgl === -1) idxTgl = 0;
+      if (idxStatus === -1) idxStatus = 4;
+
+      for (var i = 1; i < d.length; i++) {
+        var tglRow = formatTanggalYYYYMMDD(d[i][idxTgl]);
+        if (tglRow === tglTarget) {
+          var status = d[i][idxStatus] ? d[i][idxStatus].toString().trim().toUpperCase().substring(0, 1) : "";
+          if (status === "H" || status === "M") {
+            stats.hadir++;
+          } else if (status === "S") {
+            stats.sakit++;
+          } else if (status === "I") {
+            stats.izin++;
+          } else if (status === "A") {
+            stats.alpha++;
+          }
+        }
+      }
+    }
+  }
+  return stats;
+}
+
+// =========================================================================
+// 9. AMBIL LIST GURU PER HARI (DASHBOARD KEPSEK)
+// =========================================================================
+function getGuruList(tanggalInput) {
+  var listGuru = [];
+  var mapSudahAda = {};
+  var ss = SS_();
+
+  var sh = ss.getSheetByName("Guru");
+  if (sh) {
+    var data = sh.getDataRange().getValues();
+    if (data.length > 1) {
+      var headers = data[0];
+      var idxId = headers.findIndex(function(h) {
+        var str = h.toString().toLowerCase();
+        return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1 || str.indexOf("guru") !== -1;
+      });
+      var idxNama = headers.findIndex(function(h) {
+        return h.toString().toLowerCase().indexOf("nama") !== -1;
+      });
+      var idxJabatan = headers.findIndex(function(h) {
+        return h.toString().toLowerCase().indexOf("jabatan") !== -1 || h.toString().toLowerCase().indexOf("peran") !== -1 || h.toString().toLowerCase().indexOf("role") !== -1;
+      });
+
+      if (idxId === -1) idxId = 1;
+      if (idxNama === -1) idxNama = 2;
+      if (idxJabatan === -1) idxJabatan = 3;
+
+      for (var i = 1; i < data.length; i++) {
+        var valId = data[i][idxId] ? data[i][idxId].toString().trim() : "";
+        var valNama = data[i][idxNama] ? data[i][idxNama].toString().trim() : "";
+        var valJabatan = data[i][idxJabatan] ? data[i][idxJabatan].toString().trim() : "";
+
+        if (valId !== "" && valNama !== "") {
+          if (!mapSudahAda[valId]) {
+            mapSudahAda[valId] = true;
+            listGuru.push({
+              id_guru: valId,
+              nama: valNama,
+              jabatan: valJabatan,
+              status: "Masuk", // default
+              status_code: "M"
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Pencocokan status jika tanggal dikirim
+  if (tanggalInput && listGuru.length > 0) {
+    var sheetAbsensi = ss.getSheetByName("Absensi_Guru");
+    if (sheetAbsensi) {
+      var dataAbsen = sheetAbsensi.getDataRange().getValues();
+      var targetTime = parseTanggalToTime(tanggalInput, true);
+
+      for (var a = 1; a < dataAbsen.length; a++) {
+        var rowTime = parseTanggalToTime(dataAbsen[a][0], true);
+        var idRow = dataAbsen[a][1] ? dataAbsen[a][1].toString().trim() : "";
+        var stRow = dataAbsen[a][4] ? dataAbsen[a][4].toString().trim() : "Masuk";
+
+        if (rowTime && targetTime && rowTime === targetTime) {
+          for (var k = 0; k < listGuru.length; k++) {
+            if (listGuru[k].id_guru === idRow) {
+              listGuru[k].status = stRow;
+              var stClean = stRow.toUpperCase().substring(0, 1);
+              listGuru[k].status_code = stClean;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    status: "success",
+    guru: listGuru,
+    data: listGuru
+  };
+}
+
+// =========================================================================
+// 10. SIMPAN ABSENSI GURU (DASHBOARD KEPSEK)
+// =========================================================================
+function simpanAbsensiGuru(requestData) {
+  var ss = SS_();
+  var tanggalInput = requestData.tanggal || requestData.tgl;
+  var dataInputGuru = requestData.data || requestData.guru || [];
+  var namaUser = requestData.nama_user || "Kepala Sekolah";
+
+  var sheetAbsensi = ss.getSheetByName("Absensi_Guru");
+  if (!sheetAbsensi) {
+    return { ok: false, message: "Sheet Absensi_Guru tidak ditemukan!" };
+  }
+
+  var dataAbsensi = sheetAbsensi.getDataRange().getValues();
+  var headersAbsen = dataAbsensi[0];
+
+  var idxTglAbsen = headersAbsen.findIndex(function(h) { return h.toString().toLowerCase().indexOf("tanggal") !== -1; });
+  var idxIdAbsen = headersAbsen.findIndex(function(h) {
+    var str = h.toString().toLowerCase();
+    return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1 || str.indexOf("guru") !== -1;
+  });
+  var idxNamaAbsen = headersAbsen.findIndex(function(h) { return h.toString().toLowerCase().indexOf("nama") !== -1; });
+  var idxJabatanAbsen = headersAbsen.findIndex(function(h) { return h.toString().toLowerCase().indexOf("jabatan") !== -1; });
+  var idxStatusAbsen = headersAbsen.findIndex(function(h) { return h.toString().toLowerCase().indexOf("status") !== -1; });
+  var idxJam = headersAbsen.findIndex(function(h) { return h.toString().toLowerCase().indexOf("jam") !== -1; });
+  var idxMetode = headersAbsen.findIndex(function(h) { return h.toString().toLowerCase().indexOf("metode") !== -1; });
+  var idxDiinput = headersAbsen.findIndex(function(h) { return h.toString().toLowerCase().indexOf("diinput") !== -1; });
+
+  if (idxTglAbsen === -1) idxTglAbsen = 0;
+  if (idxIdAbsen === -1) idxIdAbsen = 1;
+  if (idxNamaAbsen === -1) idxNamaAbsen = 2;
+  if (idxJabatanAbsen === -1) idxJabatanAbsen = 3;
+  if (idxStatusAbsen === -1) idxStatusAbsen = 4;
+  if (idxJam === -1) idxJam = 5;
+  if (idxMetode === -1) idxMetode = 6;
+  if (idxDiinput === -1) idxDiinput = 7;
+
+  var tglTarget = formatTanggalYYYYMMDD(tanggalInput);
+  var jamSekarang = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm:ss");
+
+  dataInputGuru.forEach(function(item) {
+    var idCari = item.id_guru ? item.id_guru.toString().trim() : (item.id ? item.id.toString().trim() : "");
+    var statusBaru = item.status ? item.status.toString().trim() : "Masuk";
+    var namaGuru = item.nama || "-";
+    var jabatanGuru = item.jabatan || "Guru";
+    var barisDitemukan = -1;
+
+    for (var n = 1; n < dataAbsensi.length; n++) {
+      var tglRow = formatTanggalYYYYMMDD(dataAbsensi[n][idxTglAbsen]);
+      var idRow = dataAbsensi[n][idxIdAbsen] ? dataAbsensi[n][idxIdAbsen].toString().trim() : "";
+
+      if (tglRow === tglTarget && idRow === idCari) {
+        barisDitemukan = n + 1;
+        break;
+      }
+    }
+
+    if (barisDitemukan !== -1) {
+      sheetAbsensi.getRange(barisDitemukan, idxStatusAbsen + 1).setValue(statusBaru);
+      if (idxJam !== -1) sheetAbsensi.getRange(barisDitemukan, idxJam + 1).setValue(jamSekarang);
+      if (idxDiinput !== -1) sheetAbsensi.getRange(barisDitemukan, idxDiinput + 1).setValue(namaUser);
+    } else {
+      var barisBaru = [];
+      for (var c = 0; c < headersAbsen.length; c++) {
+        if (c === idxTglAbsen) barisBaru.push(tglTarget);
+        else if (c === idxIdAbsen) barisBaru.push(idCari);
+        else if (c === idxNamaAbsen) barisBaru.push(namaGuru);
+        else if (c === idxJabatanAbsen) barisBaru.push(jabatanGuru);
+        else if (c === idxStatusAbsen) barisBaru.push(statusBaru);
+        else if (c === idxJam) barisBaru.push(jamSekarang);
+        else if (c === idxMetode) barisBaru.push("Manual Halaman Kepsek");
+        else if (c === idxDiinput) barisBaru.push(namaUser);
+        else barisBaru.push("");
+      }
+      sheetAbsensi.appendRow(barisBaru);
+    }
+  });
+
+  return { ok: true, status: "success", message: "Absensi guru berhasil disimpan!" };
 }
 
 // =========================================================================

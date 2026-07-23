@@ -14,6 +14,7 @@
       --white: #ffffff;
       --danger: #dc3545;
       --success: #198754;
+      --warning: #ffc107;
     }
     
     body { 
@@ -23,7 +24,7 @@
       padding: 20px; 
     }
     
-    .container { max-width: 900px; margin: 0 auto; }
+    .container { max-width: 950px; margin: 0 auto; }
     
     .header { 
       background: var(--primary); 
@@ -59,28 +60,76 @@
     .card-stat p { font-size: 32px; font-weight: 700; color: var(--primary); margin-top: 8px; }
     .card-stat .detail-text { font-size: 12px; color: #64748b; margin-top: 4px; }
     
-    .action-panel {
+    .card {
       background: var(--white);
       padding: 24px;
       border-radius: 16px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-      text-align: center;
+      margin-bottom: 20px;
     }
+
+    .filter-panel {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 15px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Panel Keterangan/Legenda Singkatan Huruf */
+    .legend-panel {
+      display: flex;
+      gap: 16px;
+      background: #f8faf9;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px dashed #cbd5e1;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+
+    label { font-size: 12px; font-weight: 600; color: #64748b; }
+    select, input[type="date"], button { padding: 10px 14px; border-radius: 8px; font-size: 14px; border: 1px solid #dcdfdc; font-family: inherit; }
     
-    .btn-nav { 
+    button {
       background: var(--primary); 
       color: white; 
-      text-decoration: none; 
-      padding: 12px 24px; 
-      border-radius: 8px; 
-      font-size: 15px; 
+      border: none;
       font-weight: 600; 
-      display: inline-block; 
-      transition: background 0.2s;
       cursor: pointer;
+      transition: opacity 0.2s;
     }
+    button:hover { opacity: 0.9; }
+    button.btn-save { background: var(--success); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px; border-bottom: 1px solid #edf2f0; font-size: 14px; text-align: left; }
+    th { background: #f8faf9; color: var(--primary); font-weight: 600; }
     
-    .btn-nav:hover { background: #0b3d26; }
+    .select-status {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-weight: 800;
+      width: 100px;
+      text-align: center;
+      font-family: inherit;
+    }
+    .status-M { background-color: #e2f0d9; color: #155724; border-color: #c3e6cb; }
+    .status-S { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
+    .status-I { background-color: #cff4fc; color: #055160; border-color: #b6effb; }
+    .status-A { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+
+    .action-panel { text-align: center; padding: 16px; background: var(--white); border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .btn-nav { background: var(--primary); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; display: inline-block; }
   </style>
 </head>
 <body>
@@ -126,6 +175,48 @@
       </div>
     </div>
 
+    <!-- Blok Manajemen Absensi Guru (Hanya Kepala Sekolah yang memiliki wewenang) -->
+    <div class="card">
+      <h2>📝 Pencatatan & Perubahan Absensi Guru & Staf</h2>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Kelola data absensi guru secara langsung dari dashboard Kepala Sekolah.</p>
+
+      <div class="filter-panel">
+        <div class="filter-group">
+          <label>Pilih Tanggal:</label>
+          <input type="date" id="tglAbsensi">
+        </div>
+        <button onclick="tampilkanGuruDariSheetMaster()">🔍 Tampilkan Guru</button>
+        <button class="btn-save" id="btnSimpan" onclick="simpanKeAbsensiGuru()" style="display:none;">💾 Simpan Rekapan Guru</button>
+      </div>
+
+      <!-- Keterangan Singkatan untuk Penginput -->
+      <div class="legend-panel">
+        <span style="font-weight:700; color:#475569; display:inline-block; margin-right:5px;">Info Dropdown:</span>
+        <div class="legend-item"><span class="badge status-M">Masuk</span> Hadir / Masuk</div>
+        <div class="legend-item"><span class="badge status-S">Sakit</span> Sakit</div>
+        <div class="legend-item"><span class="badge status-I">Izin</span> Izin</div>
+        <div class="legend-item"><span class="badge status-A">Alpha</span> Alpha (Tanpa Keterangan)</div>
+      </div>
+
+      <!-- Tabel Input & Edit Absensi Guru -->
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 8%;">No</th>
+              <th style="width: 25%;">ID Guru</th>
+              <th style="width: 32%;">Nama Lengkap</th>
+              <th style="width: 15%;">Jabatan</th>
+              <th style="width: 20%;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabelGuruBody">
+            <tr><td colspan="5" style="text-align:center; color: #64748b; padding: 20px;">Silakan tentukan tanggal terlebih dahulu.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Panel Menu Rekapan Menuju Halaman GitHub Pages Anda (Tab yang Sama) -->
     <div class="action-panel">
       <a href="https://binailmublora.github.io/absensi/dashboard-export.html" target="_top" class="btn-nav">📊 Buka Menu Rekapan & Export</a>
@@ -135,7 +226,7 @@
 
   <script>
     // URL Backend disamakan persis dengan yang ada di dashboard-export.html Anda
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzzTBoCa6w-RgExxKr-vbhI4zTIAvOhwUxSvAfYriDtvz-xwxYOQoc8cpuaLSefVu3T2w/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbygrXhC8EM5sr2nlLszzbtQNBDMCdyzfXpT1kn4a3IMtkyDtp3Hq1k9Riym3pLAgWsbGw/exec";
     
     // Proteksi Validasi Login berbasis LocalStorage
     if (!localStorage.getItem('auth_token') || localStorage.getItem('user_role') !== 'KepalaSekolah') {
@@ -144,6 +235,12 @@
     
     // Set Nama Pengguna Secara Instan dari LocalStorage browser
     document.getElementById('namaUser').textContent = localStorage.getItem('user_nama');
+
+    function setHariIni() {
+      const hariIni = new Date();
+      const formatHariIni = `${hariIni.getFullYear()}-${String(hariIni.getMonth() + 1).padStart(2, '0')}-${String(hariIni.getDate()).padStart(2, '0')}`;
+      document.getElementById('tglAbsensi').value = formatHariIni;
+    }
 
     function ambilDataKepsek() {
       // Menggunakan fetch POST dengan mode cors ke Google Apps Script backend Anda
@@ -164,13 +261,18 @@
         if(data && data.stats) {
           // Masukkan angka statistik ke dalam komponen card
           document.getElementById('guruHadir').textContent = data.stats.guruHadir || "0";
-          document.getElementById('guruAbsen').textContent = data.stats.guruAbsen || "0";
+
+          const totalGuruAbsen = (data.stats.guruSakit || 0) + (data.stats.guruIzin || 0) + (data.stats.guruAlpha || 0);
+          document.getElementById('guruAbsen').textContent = totalGuruAbsen;
+
           document.getElementById('siswaHadir').textContent = data.stats.siswaHadir || "0";
-          document.getElementById('siswaAbsen').textContent = data.stats.siswaAbsen || "0";
+
+          const totalSiswaAbsen = (data.stats.siswaSakit || 0) + (data.stats.siswaIzin || 0) + (data.stats.siswaAlpha || 0);
+          document.getElementById('siswaAbsen').textContent = totalSiswaAbsen;
           
           // Masukkan ringkasan teks keterangan (alasan) jika disediakan oleh backend Anda
-          document.getElementById('detailGuruTidakHadir').innerHTML = data.details?.guruKeterangan || "Semua staf terabsen.";
-          document.getElementById('detailSiswaTidakHadir').innerHTML = data.details?.siswaKeterangan || "Tidak ada siswa absen.";
+          document.getElementById('detailGuruTidakHadir').innerHTML = `Sakit: <strong>${data.stats.guruSakit || 0}</strong> | Izin: <strong>${data.stats.guruIzin || 0}</strong> | Alfa: <strong>${data.stats.guruAlpha || 0}</strong>`;
+          document.getElementById('detailSiswaTidakHadir').innerHTML = `Sakit: <strong>${data.stats.siswaSakit || 0}</strong> | Izin: <strong>${data.stats.siswaIzin || 0}</strong> | Alfa: <strong>${data.stats.siswaAlpha || 0}</strong>`;
         }
       })
       .catch(err => {
@@ -185,13 +287,145 @@
       });
     }
 
+    function tampilkanGuruDariSheetMaster() {
+      const tgl = document.getElementById('tglAbsensi').value;
+      const tbody = document.getElementById('tabelGuruBody');
+
+      if(!tgl) {
+        alert("Mohon tentukan pilihan tanggal!");
+        return;
+      }
+
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">🔄 Mengambil data master guru...</td></tr>';
+      document.getElementById('btnSimpan').style.display = 'none';
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'getAbsensiGuruPerHari',
+          tanggal: tgl,
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        let daftarGuru = data.guru || data.data || (Array.isArray(data) ? data : null);
+
+        if(!daftarGuru || daftarGuru.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b; padding:20px;">⚠️ Data guru tidak ditemukan di sheet master.</td></tr>';
+          return;
+        }
+
+        document.getElementById('btnSimpan').style.display = 'inline-block';
+
+        tbody.innerHTML = daftarGuru.map((mhs, index) => {
+          const idValid = mhs.id_guru || "-";
+          const namaValid = mhs.nama || "-";
+          const jabatanValid = mhs.jabatan || "-";
+
+          let st = mhs.status || "Masuk";
+          let code = "M";
+          if (st.toLowerCase().indexOf("sakit") !== -1 || st === "S") code = "S";
+          else if (st.toLowerCase().indexOf("izin") !== -1 || st === "I") code = "I";
+          else if (st.toLowerCase().indexOf("alpha") !== -1 || st === "A") code = "A";
+
+          return `
+            <tr data-idguru="${idValid}">
+              <td>${index + 1}</td>
+              <td><strong>${idValid}</strong></td>
+              <td>${namaValid}</td>
+              <td>${jabatanValid}</td>
+              <td>
+                <select class="select-status status-${code}" onchange="updateWarnaDropdown(this)">
+                  <option value="Masuk" ${code === 'M' ? 'selected' : ''}>Masuk</option>
+                  <option value="Sakit" ${code === 'S' ? 'selected' : ''}>Sakit</option>
+                  <option value="Izin" ${code === 'I' ? 'selected' : ''}>Izin</option>
+                  <option value="Alpha" ${code === 'A' ? 'selected' : ''}>Alpha</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      })
+      .catch(err => {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">❌ Terjadi kesalahan pemrosesan data web.</td></tr>';
+      });
+    }
+
+    function updateWarnaDropdown(el) {
+      let code = "M";
+      const val = el.value.toLowerCase();
+      if (val.indexOf("sakit") !== -1) code = "S";
+      else if (val.indexOf("izin") !== -1) code = "I";
+      else if (val.indexOf("alpha") !== -1) code = "A";
+
+      el.className = `select-status status-${code}`;
+    }
+
+    function simpanKeAbsensiGuru() {
+      const tgl = document.getElementById('tglAbsensi').value;
+      const barisTabel = document.querySelectorAll('#tabelGuruBody tr');
+
+      let dataPresensi = [];
+      barisTabel.forEach(tr => {
+        const idGuru = tr.getAttribute('data-idguru');
+        const status = tr.querySelector('.select-status')?.value;
+        if(idGuru && idGuru !== "-") {
+          dataPresensi.push({ id_guru: idGuru, status: status });
+        }
+      });
+
+      if(dataPresensi.length === 0) return;
+
+      const btn = document.getElementById('btnSimpan');
+      btn.disabled = true;
+      btn.textContent = "⌛ Menyimpan...";
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'simpanAbsensiGuru',
+          tanggal: tgl,
+          guru: dataPresensi,
+          nama_user: localStorage.getItem('user_nama'),
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan Rekapan Guru";
+        if(res.ok || res.status === "success") {
+          alert("✓ Rekapan absensi guru berhasil disimpan!");
+          tampilkanGuruDariSheetMaster();
+          ambilDataKepsek(); // Update stats cards automatically
+        } else {
+          alert("Gagal menyimpan: " + (res.message || "Periksa log"));
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan Rekapan Guru";
+        alert("❌ Putus koneksi server.");
+      });
+    }
+
     function logout() {
       localStorage.clear();
       window.location.href = 'index.html';
     }
 
     // Eksekusi fungsi penarikan data ketika window selesai dimuat
-    window.onload = ambilDataKepsek;
+    window.onload = function() {
+      setHariIni();
+      ambilDataKepsek();
+    };
   </script>
 </body>
 </html>
