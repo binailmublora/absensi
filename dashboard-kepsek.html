@@ -144,6 +144,11 @@
       <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
     </div>
 
+    <!-- Alert Banner KBM -->
+    <div id="bannerKBM" style="display: none; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 16px; border-radius: 12px; margin-bottom: 20px; font-weight: 500; font-size: 14px; border-left: 5px solid var(--accent);">
+      📢 <span id="textBannerKBM">Memuat informasi KBM...</span>
+    </div>
+
     <!-- 4 Blok Rangkuman Utama Presensi Hari Ini -->
     <div class="grid-stats">
       <!-- 1. Ringkasan Guru Hadir -->
@@ -218,7 +223,8 @@
     </div>
 
     <!-- Panel Menu Rekapan Menuju Halaman GitHub Pages Anda (Tab yang Sama) -->
-    <div class="action-panel">
+    <div class="action-panel" style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+      <a href="dashboard-editkbm.html" class="btn-nav" style="background: var(--accent);">📅 Edit KBM & Kalender</a>
       <a href="https://binailmublora.github.io/absensi/dashboard-export.html" target="_top" class="btn-nav">📊 Buka Menu Rekapan & Export</a>
     </div>
 
@@ -226,7 +232,7 @@
 
   <script>
     // URL Backend disamakan persis dengan yang ada di dashboard-export.html Anda
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbycVWop6vtAXVDINW0M60AhOiiwRUeYnDCNeQs3A_ayCqp7S5JpyBy-vhBQqDkvX9a2Sg/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwfuIjsavW4QwHFhKxJaI1HjHZGx-16Y95K0EpCEzsljG7MnHnPrkTDMSOUYKT2tVfW0Q/exec";
     
     // Proteksi Validasi Login berbasis LocalStorage
     if (!localStorage.getItem('auth_token') || localStorage.getItem('user_role') !== 'KepalaSekolah') {
@@ -273,6 +279,17 @@
           // Masukkan ringkasan teks keterangan (alasan) jika disediakan oleh backend Anda
           document.getElementById('detailGuruTidakHadir').innerHTML = `Sakit: <strong>${data.stats.guruSakit || 0}</strong> | Izin: <strong>${data.stats.guruIzin || 0}</strong> | Alfa: <strong>${data.stats.guruAlpha || 0}</strong>`;
           document.getElementById('detailSiswaTidakHadir').innerHTML = `Sakit: <strong>${data.stats.siswaSakit || 0}</strong> | Izin: <strong>${data.stats.siswaIzin || 0}</strong> | Alfa: <strong>${data.stats.siswaAlpha || 0}</strong>`;
+        }
+        
+        // Handle KBM Info banner
+        if (data && data.kbm_info && data.kbm_info.status !== "Belajar") {
+          const banner = document.getElementById('bannerKBM');
+          const bannerText = document.getElementById('textBannerKBM');
+          banner.style.display = 'block';
+          const statusText = data.kbm_info.status === 'Libur' ? 'HARI LIBUR SEKOLAH' : 'KEGIATAN KHUSUS (NON-KBM)';
+          bannerText.innerHTML = `Hari ini dikonfigurasi sebagai <strong>${statusText}</strong>. Keterangan: <em>${data.kbm_info.keterangan || '-'}</em>`;
+        } else {
+          document.getElementById('bannerKBM').style.display = 'none';
         }
       })
       .catch(err => {
