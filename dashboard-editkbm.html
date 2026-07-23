@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit KBM & Kalender Akademik - E-Absensi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0f5132;
+      --accent: #e5a93b;
+      --bg: #f4f7f5;
+      --text-main: #1e293b;
+      --white: #ffffff;
+      --danger: #dc3545;
+      --success: #198754;
+      --warning: #ffc107;
+      --info: #0dcaf0;
+    }
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background: var(--bg); 
+      color: var(--text-main); 
+      padding: 20px; 
+    }
+    
+    .container { max-width: 950px; margin: 0 auto; }
+    
+    .header { 
+      background: var(--primary); 
+      color: white; 
+      padding: 24px; 
+      border-radius: 16px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      border-bottom: 4px solid var(--accent); 
+    }
+    
+    .card {
+      background: var(--white);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+      margin-bottom: 20px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      align-items: flex-end;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label { font-size: 12px; font-weight: 600; color: #64748b; }
+    select, input[type="date"], input[type="text"], button { 
+      padding: 10px 14px; 
+      border-radius: 8px; 
+      font-size: 14px; 
+      border: 1px solid #dcdfdc; 
+      font-family: inherit; 
+    }
+    
+    button { 
+      background: var(--primary); 
+      color: white; 
+      border: none; 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    button.btn-save { background: var(--success); }
+    button.btn-delete { 
+      background: var(--danger); 
+      padding: 6px 12px; 
+      font-size: 12px; 
+      border-radius: 6px; 
+    }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px; border-bottom: 1px solid #edf2f0; font-size: 14px; text-align: left; }
+    th { background: #f8faf9; color: var(--primary); font-weight: 600; }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 12px;
+      text-align: center;
+    }
+    .status-Libur { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status-Kegiatan { background-color: #cff4fc; color: #055160; border: 1px solid #b6effb; }
+
+    .action-panel { text-align: center; padding: 16px; background: var(--white); border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .btn-nav { background: var(--primary); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Topbar Header -->
+    <div class="header">
+      <div>
+        <h1>Edit KBM & Kalender Akademik</h1>
+        <p>Manajemen Kalender Sekolah</p> 
+      </div>
+      <a href="dashboard-kepsek.html" style="background: var(--accent); color:white; text-decoration:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Kembali</a>
+    </div>
+
+    <!-- Panel Form Konfigurasi -->
+    <div class="card">
+      <h2>📅 Atur Hari Libur & Kegiatan Khusus</h2>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+        Gunakan form di bawah ini untuk menentukan hari libur akademik atau kegiatan belajar mengajar (KBM) yang diganti dengan aktivitas khusus.
+      </p>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Pilih Tanggal:</label>
+          <input type="date" id="tglKBM">
+        </div>
+        <div class="form-group">
+          <label>Status Hari:</label>
+          <select id="statusKBM">
+            <option value="Belajar">Belajar (KBM Normal)</option>
+            <option value="Libur">Libur (Sekolah Libur)</option>
+            <option value="Kegiatan">Kegiatan Khusus (Non-KBM)</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <label>Keterangan / Nama Kegiatan:</label>
+          <input type="text" id="ketKBM" placeholder="Contoh: Libur Lebaran, Pondok Ramadan, MPLS">
+        </div>
+        <button class="btn-save" id="btnSimpan" onclick="simpanKalender()">💾 Simpan KBM</button>
+      </div>
+    </div>
+
+    <!-- Daftar Kalender KBM yang Terdaftar -->
+    <div class="card">
+      <h2>📋 Daftar Kalender KBM Kustom</h2>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+        Berikut adalah daftar hari libur dan kegiatan khusus yang telah dikonfigurasi. Di luar daftar ini, kalender dianggap sebagai hari Belajar (KBM Normal).
+      </p>
+
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 8%;">No</th>
+              <th style="width: 25%;">Tanggal</th>
+              <th style="width: 20%;">Status</th>
+              <th style="width: 32%;">Keterangan</th>
+              <th style="width: 15%;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabelKalenderBody">
+            <tr><td colspan="5" style="text-align:center; color: #64748b; padding: 20px;">Memuat data kalender akademik...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwfuIjsavW4QwHFhKxJaI1HjHZGx-16Y95K0EpCEzsljG7MnHnPrkTDMSOUYKT2tVfW0Q/exec";
+    const ROLE = localStorage.getItem('user_role');
+
+    // Validasi Akses Kepala Sekolah
+    if (!localStorage.getItem('auth_token') || ROLE !== 'KepalaSekolah') {
+      window.location.href = 'index.html';
+    }
+
+    function setHariIni() {
+      const hariIni = new Date();
+      const formatHariIni = `${hariIni.getFullYear()}-${String(hariIni.getMonth() + 1).padStart(2, '0')}-${String(hariIni.getDate()).padStart(2, '0')}`;
+      document.getElementById('tglKBM').value = formatHariIni;
+    }
+
+    function muatKalender() {
+      const tbody = document.getElementById('tabelKalenderBody');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">🔄 Mengambil data kalender akademik...</td></tr>';
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'getKalender',
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">⚠️ Gagal memuat data: ${res.message || ''}</td></tr>`;
+          return;
+        }
+
+        const list = res.data || [];
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b; padding:20px;">Belum ada hari libur/kegiatan kustom yang dikonfigurasi.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map((item, index) => {
+          const badgeClass = `status-${item.status}`;
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td><strong>${item.tanggal}</strong></td>
+              <td><span class="status-badge ${badgeClass}">${item.status === 'Kegiatan' ? 'Kegiatan Khusus' : item.status}</span></td>
+              <td>${item.keterangan || "-"}</td>
+              <td>
+                <button class="btn-delete" onclick="hapusKalender('${item.tanggal}')">Hapus</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      })
+      .catch(err => {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">❌ Terjadi kesalahan koneksi server.</td></tr>';
+      });
+    }
+
+    function simpanKalender() {
+      const tgl = document.getElementById('tglKBM').value;
+      const status = document.getElementById('statusKBM').value;
+      const keterangan = document.getElementById('ketKBM').value;
+
+      if (!tgl) {
+        alert("Mohon pilih tanggal terlebih dahulu!");
+        return;
+      }
+
+      const btn = document.getElementById('btnSimpan');
+      btn.disabled = true;
+      btn.textContent = "⌛ Menyimpan...";
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'simpanKalender',
+          tanggal: tgl,
+          status: status,
+          keterangan: keterangan,
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan KBM";
+        if (res.ok || res.status === "success") {
+          alert("✓ Konfigurasi kalender KBM berhasil disimpan!");
+          document.getElementById('ketKBM').value = "";
+          muatKalender();
+        } else {
+          alert("Gagal menyimpan: " + (res.message || "Periksa log"));
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan KBM";
+        alert("❌ Gagal terhubung ke server.");
+      });
+    }
+
+    function hapusKalender(tgl) {
+      if (!confirm(`Apakah Anda yakin ingin menghapus konfigurasi tanggal ${tgl} dan mengembalikannya ke Belajar (KBM Normal)?`)) {
+        return;
+      }
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'simpanKalender',
+          tanggal: tgl,
+          status: 'Belajar',
+          keterangan: '',
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.ok || res.status === "success") {
+          alert("✓ Konfigurasi tanggal berhasil dihapus!");
+          muatKalender();
+        } else {
+          alert("Gagal menghapus: " + (res.message || ""));
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("❌ Gagal terhubung ke server.");
+      });
+    }
+
+    window.onload = function() {
+      setHariIni();
+      muatKalender();
+    };
+  </script>
+</body>
+</html>
