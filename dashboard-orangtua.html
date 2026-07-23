@@ -144,6 +144,8 @@
     .status-S { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
     .status-I { background-color: #cff4fc; color: #055160; border: 1px solid #b6effb; }
     .status-A { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status-L { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status-K { background-color: #cff4fc; color: #055160; border: 1px solid #b6effb; }
   </style>
 </head>
 <body>
@@ -208,7 +210,9 @@
         <div class="legend-item"><span class="badge status-H">H</span> Hadir</div>
         <div class="legend-item"><span class="badge status-S">S</span> Sakit</div>
         <div class="legend-item"><span class="badge status-I">I</span> Izin</div>
-        <div class="legend-item"><span class="badge status-A">A</span> Alpha (Tanpa Keterangan)</div>
+        <div class="legend-item"><span class="badge status-A">A</span> Alpha</div>
+        <div class="legend-item"><span class="badge status-L">L</span> Libur</div>
+        <div class="legend-item"><span class="badge status-K">K</span> Kegiatan</div>
       </div>
 
       <!-- Tabel Pratinjau Rekapan -->
@@ -303,7 +307,9 @@
             else if (st === 'S') s++;
             else if (st === 'I') i++;
             else if (st === 'A') a++;
-            else h++;
+            else if (st === 'L' || st === 'K') {
+              // Holiday status codes - do not increment attendance summary stats
+            } else h++;
 
             return `
               <tr>

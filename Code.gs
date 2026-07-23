@@ -120,6 +120,16 @@ function processRequest(requestData) {
       return simpanAbsensiGuru(requestData);
     }
 
+    // 11. Ambil list kalender akademik KBM
+    if (action === "getKalender") {
+      return getKalender();
+    }
+
+    // 12. Simpan atau edit kalender akademik KBM
+    if (action === "simpanKalender") {
+      return simpanKalender(requestData);
+    }
+
     return { ok: false, message: "Aksi tidak dikenal: " + action };
   } catch(err) {
     return { ok: false, message: err.toString() };
@@ -257,12 +267,14 @@ function getSiswaByKelas(kelasInput, tanggalInput) {
     }
   }
 
+  var kbmInfo = getKBMInfoForDate(tanggalInput || new Date());
   return {
     ok: true,
     status: "success",
     data: listSiswa,
     siswa: listSiswa,
-    result: listSiswa
+    result: listSiswa,
+    kbm_info: kbmInfo
   };
 }
 
@@ -351,26 +363,42 @@ function getRekapAbsensiKelas(requestData) {
         if (endTimestamp && rowTimestamp > endTimestamp) inRange = false;
 
         if (inRange) {
+          var kbmDay = getKBMInfoForDate(uniformTglStr);
+          var finalStatus = row[idxStatus] ? row[idxStatus].toString().trim() : "";
+          var finalKeterangan = (sheetName === "Absensi_Guru" && row[idxKet]) ? row[idxKet].toString().trim() : "-";
+
+          if (kbmDay.status === "Libur") {
+            finalStatus = (sheetName === "Absensi_Guru") ? "Libur" : "L";
+            if (sheetName === "Absensi_Guru") finalKeterangan = kbmDay.keterangan || "Libur Akademik";
+          } else if (kbmDay.status === "Kegiatan") {
+            finalStatus = (sheetName === "Absensi_Guru") ? "Kegiatan" : "K";
+            if (sheetName === "Absensi_Guru") finalKeterangan = kbmDay.keterangan || "Kegiatan Sekolah";
+          }
+
           if (sheetName === "Absensi_Guru") {
             rekapFiltered.push({
               "Tanggal": uniformTglStr,
               "ID_Guru": valId,
               "Nama": row[idxNama] ? row[idxNama].toString().trim() : "",
               "Jabatan": row[idxJabatan] ? row[idxJabatan].toString().trim() : "",
-              "Status": row[idxStatus] ? row[idxStatus].toString().trim() : "",
+              "Status": finalStatus,
               "Jam": formatJam(row[idxJam]),
               "Metode": row[idxMetode] ? row[idxMetode].toString().trim() : "-",
               "Diinput_Oleh": row[idxDiinput] ? row[idxDiinput].toString().trim() : "-",
-              "Keterangan": row[idxKet] ? row[idxKet].toString().trim() : "-"
+              "Keterangan": finalKeterangan
             });
           } else {
             // Absensi_Siswa
+            var cleanStatus = finalStatus;
+            if (cleanStatus !== "L" && cleanStatus !== "K") {
+              cleanStatus = cleanStatus.toUpperCase().substring(0, 1) || "H";
+            }
             rekapFiltered.push({
               "Tanggal": uniformTglStr,
               "ID_Siswa": valId,
               "Nama": row[idxNama] ? row[idxNama].toString().trim() : "",
               "Kelas": row[idxKelas] ? row[idxKelas].toString().trim() : "",
-              "Status": row[idxStatus] ? row[idxStatus].toString().trim().toUpperCase().substring(0, 1) : "H",
+              "Status": cleanStatus,
               "Jam": formatJam(row[idxJam]),
               "Metode": row[idxMetode] ? row[idxMetode].toString().trim() : "-",
               "Diinput_Oleh": row[idxDiinput] ? row[idxDiinput].toString().trim() : "-"
@@ -790,10 +818,12 @@ function getDataKepsek(requestData) {
       siswaKeterangan: "Hadir: " + stats.siswaHadir + ", Sakit: " + stats.siswaSakit + ", Izin: " + stats.siswaIzin + ", Alpha: " + stats.siswaAlpha
     };
 
+    var kbmInfo = getKBMInfoForDate(tglTarget);
     return {
       ok: true,
       stats: stats,
-      details: details
+      details: details,
+      kbm_info: kbmInfo
     };
   } catch(err) {
     return { ok: false, message: "Gagal memproses data Kepala Sekolah: " + err.toString() };
@@ -908,11 +938,13 @@ function getGuruList(tanggalInput) {
     }
   }
 
+  var kbmInfo = getKBMInfoForDate(tanggalInput || new Date());
   return {
     ok: true,
     status: "success",
     guru: listGuru,
-    data: listGuru
+    data: listGuru,
+    kbm_info: kbmInfo
   };
 }
 
@@ -1047,6 +1079,144 @@ function formatTanggalYYYYMMDD(val) {
     }
   }
   return str;
+}
+
+// =========================================================================
+// 11. AMBIL LIST KALENDER KBM (DASHBOARD EDIT KBM)
+// =========================================================================
+function getKalender() {
+  var listKalender = [];
+  var ss = SS_();
+  var sh = ss.getSheetByName("Kalender");
+  if (sh) {
+    var d = sh.getDataRange().getValues();
+    if (d.length > 1) {
+      var headers = d[0];
+      var idxTgl = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("tanggal") !== -1; });
+      var idxStatus = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("status") !== -1; });
+      var idxKet = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("keterangan") !== -1; });
+
+      if (idxTgl === -1) idxTgl = 0;
+      if (idxStatus === -1) idxStatus = 1;
+      if (idxKet === -1) idxKet = 2;
+
+      for (var i = 1; i < d.length; i++) {
+        var rawTgl = d[i][idxTgl];
+        if (rawTgl) {
+          var tglStr = formatTanggalYYYYMMDD(rawTgl);
+          listKalender.push({
+            tanggal: tglStr,
+            status: d[i][idxStatus] ? d[i][idxStatus].toString().trim() : "Belajar",
+            keterangan: d[i][idxKet] ? d[i][idxKet].toString().trim() : ""
+          });
+        }
+      }
+    }
+  }
+  return { ok: true, data: listKalender };
+}
+
+// =========================================================================
+// 12. SIMPAN atau UPDATE KALENDER KBM (DASHBOARD EDIT KBM)
+// =========================================================================
+function simpanKalender(requestData) {
+  var ss = SS_();
+  var sh = ss.getSheetByName("Kalender");
+  if (!sh) {
+    try {
+      sh = ss.insertSheet("Kalender");
+      sh.appendRow(["Tanggal", "Status", "Keterangan"]);
+    } catch(e) {
+      return { ok: false, message: "Sheet Kalender tidak ditemukan dan gagal dibuat!" };
+    }
+  }
+
+  var tglInput = formatTanggalYYYYMMDD(requestData.tanggal);
+  var statusBaru = requestData.status ? requestData.status.toString().trim() : "Belajar";
+  var keteranganBaru = requestData.keterangan ? requestData.keterangan.toString().trim() : "";
+
+  if (!tglInput) {
+    return { ok: false, message: "Tanggal tidak valid!" };
+  }
+
+  var d = sh.getDataRange().getValues();
+  var headers = d[0];
+  var idxTgl = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("tanggal") !== -1; });
+  var idxStatus = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("status") !== -1; });
+  var idxKet = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("keterangan") !== -1; });
+
+  if (idxTgl === -1) idxTgl = 0;
+  if (idxStatus === -1) idxStatus = 1;
+  if (idxKet === -1) idxKet = 2;
+
+  var barisDitemukan = -1;
+  for (var i = 1; i < d.length; i++) {
+    var rowTgl = formatTanggalYYYYMMDD(d[i][idxTgl]);
+    if (rowTgl === tglInput) {
+      barisDitemukan = i + 1;
+      break;
+    }
+  }
+
+  if (statusBaru === "Belajar" || statusBaru === "") {
+    if (barisDitemukan !== -1) {
+      sh.deleteRow(barisDitemukan);
+    }
+  } else {
+    if (barisDitemukan !== -1) {
+      sh.getRange(barisDitemukan, idxStatus + 1).setValue(statusBaru);
+      sh.getRange(barisDitemukan, idxKet + 1).setValue(keteranganBaru);
+    } else {
+      var barisBaru = [];
+      for (var c = 0; c < Math.max(3, headers.length); c++) {
+        if (c === idxTgl) barisBaru.push(tglInput);
+        else if (c === idxStatus) barisBaru.push(statusBaru);
+        else if (c === idxKet) barisBaru.push(keteranganBaru);
+        else barisBaru.push("");
+      }
+      sh.appendRow(barisBaru);
+    }
+  }
+
+  return { ok: true, status: "success", message: "Kalender akademik berhasil disimpan!" };
+}
+
+// =========================================================================
+// 13. HELPER MEMBACA STATUS KBM PADA TANGGAL TERTENTU
+// =========================================================================
+function getKBMInfoForDate(tglStr) {
+  var tglClean = formatTanggalYYYYMMDD(tglStr);
+  var result = { status: "Belajar", keterangan: "" };
+  if (!tglClean) return result;
+
+  var ss = SS_();
+  var sh = ss.getSheetByName("Kalender");
+  if (sh) {
+    var d = sh.getDataRange().getValues();
+    if (d.length > 1) {
+      var headers = d[0];
+      var idxTgl = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("tanggal") !== -1; });
+      var idxStatus = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("status") !== -1; });
+      var idxKet = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("keterangan") !== -1; });
+
+      if (idxTgl === -1) idxTgl = 0;
+      if (idxStatus === -1) idxStatus = 1;
+      if (idxKet === -1) idxKet = 2;
+
+      for (var i = 1; i < d.length; i++) {
+        var rowTgl = formatTanggalYYYYMMDD(d[i][idxTgl]);
+        if (rowTgl === tglClean) {
+          var valStatus = d[i][idxStatus] ? d[i][idxStatus].toString().trim() : "Belajar";
+          if (valStatus !== "Belajar" && valStatus !== "") {
+            result.status = valStatus;
+            result.keterangan = d[i][idxKet] ? d[i][idxKet].toString().trim() : "";
+          }
+          break;
+        }
+      }
+    }
+  }
+  return result;
 }
 
 function formatJam(val) {

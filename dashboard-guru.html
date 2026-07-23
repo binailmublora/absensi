@@ -122,6 +122,11 @@
       <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
     </div>
 
+    <!-- Alert Banner KBM -->
+    <div id="bannerKBM" style="display: none; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 16px; border-radius: 12px; margin-bottom: 20px; font-weight: 500; font-size: 14px; border-left: 5px solid var(--accent);">
+      📢 <span id="textBannerKBM">Memuat informasi KBM...</span>
+    </div>
+
     <!-- Blok Manajemen Absensi Siswa -->
     <div class="card">
       <h2>📝 Pencatatan & Perubahan Absensi Siswa</h2>
@@ -242,12 +247,28 @@
       .then(data => {
         let daftarSiswa = data.siswa || data.data || (Array.isArray(data) ? data : null);
 
+        const isKBMActive = !(data.kbm_info && data.kbm_info.status !== "Belajar");
+
+        // Handle KBM Info banner
+        const banner = document.getElementById('bannerKBM');
+        const bannerText = document.getElementById('textBannerKBM');
+        if (!isKBMActive) {
+          banner.style.display = 'block';
+          const statusText = data.kbm_info.status === 'Libur' ? 'HARI LIBUR SEKOLAH' : 'KEGIATAN KHUSUS (NON-KBM)';
+          bannerText.innerHTML = `Tanggal ini dikonfigurasi sebagai <strong>${statusText}</strong>. Keterangan: <em>${data.kbm_info.keterangan || '-'}</em>. Pencatatan absensi dinonaktifkan.`;
+          document.getElementById('btnSimpan').style.display = 'none';
+        } else {
+          banner.style.display = 'none';
+        }
+
         if(!daftarSiswa || daftarSiswa.length === 0) {
           tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">⚠️ Data siswa tidak ditemukan di kelas ini pada sheet master.</td></tr>';
           return;
         }
 
-        document.getElementById('btnSimpan').style.display = 'inline-block';
+        if (isKBMActive) {
+          document.getElementById('btnSimpan').style.display = 'inline-block';
+        }
         
         tbody.innerHTML = daftarSiswa.map((mhs, index) => {
           const idValid = mhs.ID_Siswa || mhs.id_siswa || "-";
@@ -255,7 +276,13 @@
           
           let st = mhs.Status || mhs.status || "H";
           st = st.toUpperCase().trim().substring(0, 1); // Memotong untuk menyisakan kode 1 huruf saja
-          if(st !== "H" && st !== "S" && st !== "I" && st !== "A") st = "H";
+          if (st === 'L' || st === 'K') {
+            // Treat L and K as special holiday status code displays
+          } else if(st !== "H" && st !== "S" && st !== "I" && st !== "A") {
+            st = "H";
+          }
+
+          const disabledAttr = isKBMActive ? '' : 'disabled';
 
           return `
             <tr data-idsiswa="${idValid}">
@@ -263,11 +290,12 @@
               <td><strong>${idValid}</strong></td>
               <td>${namaValid}</td>
               <td>
-                <select class="select-status status-${st}" onchange="updateWarnaDropdown(this)">
+                <select class="select-status status-${st}" ${disabledAttr} onchange="updateWarnaDropdown(this)">
                   <option value="H" ${st === 'H' ? 'selected' : ''}>H</option>
                   <option value="S" ${st === 'S' ? 'selected' : ''}>S</option>
                   <option value="I" ${st === 'I' ? 'selected' : ''}>I</option>
                   <option value="A" ${st === 'A' ? 'selected' : ''}>A</option>
+                  ${!isKBMActive ? `<option value="${st}" selected>${st}</option>` : ''}
                 </select>
               </td>
             </tr>
