@@ -6,6 +6,8 @@
   <title>Sistem Absensi Digital Sekolah</title>
   <!-- Library Pindai QR Code Standar -->
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- Face-API.js untuk Fitur Deteksi dan Login Pengenalan Wajah -->
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
   <!-- Google Fonts untuk Tampilan Premium -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -71,7 +73,7 @@
       margin-top: 4px;
     }
 
-    /* Main Container (Layout Dua Tab Terpadu) */
+    /* Main Container (Layout Multi-Tab Terpadu) */
     .main-wrapper {
       width: 100%;
       max-width: 480px;
@@ -87,13 +89,14 @@
       display: flex;
       background: #f8faf9;
       border-bottom: 1px solid #edf2f0;
+      overflow-x: auto;
     }
     .tab-btn {
       flex: 1;
-      padding: 16px;
+      padding: 14px 8px;
       border: none;
       background: none;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
       cursor: pointer;
@@ -101,7 +104,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
+      white-space: nowrap;
     }
     .tab-btn.active {
       color: var(--primary);
@@ -224,8 +228,9 @@
   <div class="main-wrapper">
     <!-- Menu Pindah Tab -->
     <div class="tab-navigation">
-      <button class="tab-btn active" onclick="switchTab('scan-tab')">📷 Scan Masuk/Pulang</button>
-      <button class="tab-btn" onclick="switchTab('login-tab')">🔑 Portal Login</button>
+      <button class="tab-btn active" onclick="switchTab('scan-tab')">📷 Scan QR</button>
+      <button class="tab-btn" onclick="switchTab('face-tab')">👤 Face Login</button>
+      <button class="tab-btn" onclick="switchTab('login-tab')">🔑 PIN Login</button>
     </div>
 
     <!-- TAB 1: AREA LANGSUNG SCAN -->
@@ -242,20 +247,44 @@
       </div>
     </div>
 
-    <!-- TAB 2: PORTAL LOGIN MULTI-ROLE -->
+    <!-- TAB 2: LOGIN BERBASIS FACE RECOGNITION -->
+    <div id="face-tab" class="tab-content">
+      <div style="text-align: center; margin-bottom: 12px;">
+        <h3 style="font-size: 16px; color: var(--primary);">Login Pengenalan Wajah</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Posisikan wajah Anda tegak menghadap ke arah kamera.</p>
+      </div>
+
+      <div style="position: relative; width: 100%; max-width: 340px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #000; border: 2px solid var(--accent);">
+        <video id="faceVideo" autoplay playsinline muted style="width: 100%; height: 260px; object-fit: cover; display: block;"></video>
+        <canvas id="faceOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+      </div>
+
+      <div id="status-face" style="margin-top: 14px; padding: 12px; border-radius: 12px; font-size: 13px; text-align: center; font-weight: 600;" class="status-loading">
+        Mengaktifkan kamera & model Face ID...
+      </div>
+
+      <div style="text-align: center; margin-top: 12px;">
+        <button type="button" onclick="startFaceRecognition()" class="btn-action" style="background: var(--primary); color: white; padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">
+          🔄 Pindai Ulang Wajah
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 3: PORTAL LOGIN MULTI-ROLE -->
     <div id="login-tab" class="tab-content">
       <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
           <label for="role">Hak Akses / Jabatan</label>
           <select id="role" required>
-            <option value="Orang Tua">Orang Tua Murid</option>
-            <option value="Guru">Guru / Staf</option>
+            <option value="Mudir">Mudir (Pimpinan Utama)</option>
             <option value="Kepala Sekolah">Kepala Sekolah</option>
+            <option value="Guru">Guru / Staf</option>
+            <option value="Orang Tua">Orang Tua Murid</option>
           </select>
         </div>
         <div class="form-group">
           <label for="username">Email Pengguna</label>
-          <input type="email" id="username" placeholder="Masukkan Alamat email anda" required>
+          <input type="text" id="username" placeholder="Masukkan email atau ID Anda" required>
         </div>
         <div class="form-group">
           <label for="password">Nomor PIN yang sudah diberikan</label>
@@ -268,11 +297,18 @@
   </div>
 
 <script>
-  // URL WEB APP GOOGLE APPS SCRIPT (SUDAH DIPERBARUI)
-  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzEo5ykovd6TkVW4hBqbUVBgKh4tL6-KvgiQmYLrZXuwKMqWPX0v6mHP5KqLnf9FbLnRA/exec"; 
+  // URL WEB APP GOOGLE APPS SCRIPT
+  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwfuIjsavW4QwHFhKxJaI1HjHZGx-16Y95K0EpCEzsljG7MnHnPrkTDMSOUYKT2tVfW0Q/exec";
   
   let html5QrcodeScanner;
   let canScan = true;
+
+  // State Face Recognition
+  let faceApiLoaded = false;
+  let faceProfiles = [];
+  let faceVideoStream = null;
+  let faceDetectInterval = null;
+  let isFaceLoginSuccess = false;
 
   // Fungsi Pindah Tab Antarmuka
   function switchTab(tabId) {
@@ -280,12 +316,20 @@
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
     document.getElementById(tabId).classList.add('active');
-    event.currentTarget.classList.add('active');
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('active');
+    }
 
+    // Kelola kamera masing-masing tab
     if (tabId === 'scan-tab') {
+      stopFaceCamera();
       startCamera();
+    } else if (tabId === 'face-tab') {
+      if (html5QrcodeScanner) { try { html5QrcodeScanner.stop(); } catch(e){} }
+      startFaceRecognition();
     } else {
-      if(html5QrcodeScanner) { try { html5QrcodeScanner.stop(); } catch(e){} }
+      if (html5QrcodeScanner) { try { html5QrcodeScanner.stop(); } catch(e){} }
+      stopFaceCamera();
     }
   }
 
@@ -384,13 +428,7 @@
 
         // Pengalihan halaman yang sinkron dengan penamaan return role Apps Script
         setTimeout(() => {
-          if (res.role === 'KepalaSekolah') {
-            window.location.href = 'dashboard-kepsek.html';
-          } else if (res.role === 'Guru') {
-            window.location.href = 'dashboard-guru.html';
-          } else if (res.role === 'OrangTua') {
-            window.location.href = 'dashboard-orangtua.html';
-          }
+          redirectByRole(res.role);
         }, 1000);
 
       } else {
@@ -405,7 +443,173 @@
     });
   }
 
-  window.onload = startCamera;
+  function redirectByRole(role) {
+    if (role === 'Mudir' || role === 'Pimpinan') {
+      window.location.href = 'dashboard-mudir.html';
+    } else if (role === 'KepalaSekolah' || role === 'Kepala Sekolah') {
+      window.location.href = 'dashboard-kepsek.html';
+    } else if (role === 'Guru') {
+      window.location.href = 'dashboard-guru.html';
+    } else if (role === 'OrangTua' || role === 'Orang Tua') {
+      window.location.href = 'dashboard-orangtua.html';
+    } else {
+      window.location.href = 'dashboard-guru.html';
+    }
+  }
+
+  // ==========================================
+  // FITUR LOGIN BERBASIS FACE RECOGNITION
+  // ==========================================
+  async function initFaceAPI() {
+    try {
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      faceApiLoaded = true;
+      console.log("Model Face-API siap.");
+    } catch(err) {
+      console.warn("Gagal inisialisasi Face-API:", err);
+    }
+  }
+
+  async function loadFaceProfiles() {
+    try {
+      const response = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "getFaceProfiles" })
+      });
+      const res = await response.json();
+      if (res.ok && Array.isArray(res.data)) {
+        faceProfiles = res.data;
+        console.log(`Berhasil memuat ${faceProfiles.length} profil wajah.`);
+      }
+    } catch(err) {
+      console.warn("Gagal memuat profil wajah:", err);
+    }
+  }
+
+  async function startFaceRecognition() {
+    isFaceLoginSuccess = false;
+    const statusEl = document.getElementById("status-face");
+    statusEl.className = "status-loading";
+    statusEl.style.display = "block";
+    statusEl.innerText = "Mempersiapkan pendeteksian wajah...";
+
+    if (!faceApiLoaded) {
+      await initFaceAPI();
+    }
+    if (faceProfiles.length === 0) {
+      await loadFaceProfiles();
+    }
+
+    const video = document.getElementById("faceVideo");
+    try {
+      if (faceVideoStream) {
+        stopFaceCamera();
+      }
+      faceVideoStream = await navigator.mediaDevices.getUserMedia({ video: { width: 340, height: 260 } });
+      video.srcObject = faceVideoStream;
+
+      video.onloadedmetadata = () => {
+        statusEl.innerText = "Silakan hadap kamera untuk verifikasi wajah...";
+        jalankanPendeteksianWajah();
+      };
+    } catch(err) {
+      statusEl.className = "status-error";
+      statusEl.innerText = "Gagal mengakses kamera: " + err.message;
+    }
+  }
+
+  function jalankanPendeteksianWajah() {
+    const video = document.getElementById("faceVideo");
+    const statusEl = document.getElementById("status-face");
+
+    if (faceDetectInterval) clearInterval(faceDetectInterval);
+
+    // Ambil matcher jika ada profile yang valid
+    const labeledDescriptors = [];
+    faceProfiles.forEach(p => {
+      if (p.faceDescriptor && Array.isArray(p.faceDescriptor) && p.faceDescriptor.length === 128) {
+        labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(
+          JSON.stringify({ id: p.id, nama: p.nama, role: p.role }),
+          [new Float32Array(p.faceDescriptor)]
+        ));
+      }
+    });
+
+    let faceMatcher = null;
+    if (labeledDescriptors.length > 0) {
+      faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
+    }
+
+    faceDetectInterval = setInterval(async () => {
+      if (isFaceLoginSuccess || !video.srcObject) return;
+
+      try {
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+        if (detection) {
+          if (!faceMatcher) {
+            statusEl.className = "status-error";
+            statusEl.innerText = "Wajah terdeteksi, namun belum ada profil wajah terdaftar di sistem. Hubungi Mudir.";
+            return;
+          }
+
+          const match = faceMatcher.findBestMatch(detection.descriptor);
+          if (match.label !== 'unknown') {
+            const userData = JSON.parse(match.label);
+            isFaceLoginSuccess = true;
+            clearInterval(faceDetectInterval);
+            stopFaceCamera();
+
+            statusEl.className = "status-success";
+            statusEl.innerHTML = `✅ Wajah Dikenali: <strong>${userData.nama}</strong> (${userData.role})<br>Mengalihkan ke dashboard...`;
+
+            // Simpan sesi login
+            localStorage.setItem('auth_token', 'FACE_' + Date.now());
+            localStorage.setItem('user_nama', userData.nama);
+            localStorage.setItem('user_role', userData.role);
+            localStorage.setItem('id_terkait', userData.id);
+
+            setTimeout(() => {
+              redirectByRole(userData.role);
+            }, 1200);
+          } else {
+            statusEl.className = "status-loading";
+            statusEl.innerText = "Wajah tidak cocok dengan pengguna terdaftar. Menyesuaikan posisi...";
+          }
+        } else {
+          statusEl.className = "status-loading";
+          statusEl.innerText = "Mencari wajah... Harap posisikan wajah ke tengah kamera.";
+        }
+      } catch(e) {
+        console.warn("Deteksi error:", e);
+      }
+    }, 500);
+  }
+
+  function stopFaceCamera() {
+    if (faceDetectInterval) {
+      clearInterval(faceDetectInterval);
+      faceDetectInterval = null;
+    }
+    if (faceVideoStream) {
+      faceVideoStream.getTracks().forEach(t => t.stop());
+      faceVideoStream = null;
+    }
+    const video = document.getElementById("faceVideo");
+    if (video) video.srcObject = null;
+  }
+
+  window.onload = function() {
+    startCamera();
+    initFaceAPI();
+    loadFaceProfiles();
+  };
 </script>
 </body>
 </html>

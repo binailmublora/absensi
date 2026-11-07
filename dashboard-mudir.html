@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Mudir - Manajemen Pengguna & Face ID</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Load Face-API.js untuk ekstraksi deskriptor wajah -->
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+  <style>
+    :root {
+      --primary: #0f5132;
+      --primary-dark: #093722;
+      --accent: #e5a93b;
+      --bg: #f4f7f5;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --white: #ffffff;
+      --danger: #dc3545;
+      --success: #198754;
+      --warning: #ffc107;
+      --border: #dcdfdc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      padding: 20px 16px;
+    }
+
+    .container {
+      max-width: 1050px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: var(--primary);
+      color: var(--white);
+      padding: 24px;
+      border-radius: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 4px solid var(--accent);
+      box-shadow: 0 8px 16px rgba(15, 81, 50, 0.1);
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .header p {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-header {
+      background: var(--accent);
+      color: var(--white);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 13px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-header:hover {
+      opacity: 0.9;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(15, 81, 50, 0.06);
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15, 81, 50, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #edf2f0;
+      font-size: 14px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f8faf9;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .avatar-cell {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+      background: #eee;
+      display: block;
+    }
+
+    .badge-role {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .role-mudir { background: #fef3c7; color: #92400e; }
+    .role-kepsek { background: #e0e7ff; color: #3730a3; }
+    .role-guru { background: #d1fae5; color: #065f46; }
+    .role-ortu { background: #f1f5f9; color: #475569; }
+
+    .badge-face {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .face-yes { background: #d1fae5; color: #065f46; }
+    .face-no { background: #fee2e2; color: #991b1b; }
+
+    .action-btn-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-action {
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-edit { background: var(--accent); color: var(--white); }
+    .btn-delete { background: var(--danger); color: var(--white); }
+
+    /* Modal Form User */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--white);
+      width: 100%;
+      max-width: 580px;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .modal-header h3 {
+      font-size: 18px;
+      color: var(--primary);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--primary);
+    }
+
+    /* Area Upload & Deteksi Wajah */
+    .face-capture-area {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      background: #fafbfc;
+      margin-bottom: 14px;
+    }
+
+    .camera-preview {
+      width: 100%;
+      max-width: 320px;
+      height: 240px;
+      background: #000;
+      border-radius: 8px;
+      object-fit: cover;
+      margin: 0 auto 10px auto;
+      display: none;
+    }
+
+    .photo-preview {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--accent);
+      margin: 0 auto 10px auto;
+      display: block;
+      background: #edf2f0;
+    }
+
+    .face-status {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .face-status.success { color: var(--success); }
+    .face-status.warning { color: var(--accent); }
+    .face-status.error { color: var(--danger); }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: var(--text-main);
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header Mudir -->
+  <div class="header">
+    <div>
+      <h1>Portal Manajemen Mudir</h1>
+      <p>Ahlan wa sahlan <strong id="namaMudir">...</strong> | Kelola Pengguna & Data Wajah Face ID</p>
+    </div>
+    <div class="header-actions">
+      <a href="dashboard-kepsek.html" class="btn-header">Dashboard Kepsek</a>
+      <button onclick="logout()" class="btn-header" style="background:#dc3545;">Keluar</button>
+    </div>
+  </div>
+
+  <!-- Card Kelola User -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Daftar Pengguna Sistem</div>
+        <p style="font-size:13px; color:var(--text-muted); margin-top:4px;">Tambah user baru, koreksi profil, atur foto wajah untuk face recognition, atau hapus user.</p>
+      </div>
+      <button class="btn-primary" onclick="bukaModalTambah()">
+        ➕ Tambah Pengguna Baru
+      </button>
+    </div>
+
+    <!-- Search / Filter -->
+    <div class="search-bar">
+      <input type="text" id="searchInput" class="search-input" placeholder="Cari berdasarkan nama, email, ID, atau role..." oninput="filterUserTable()">
+    </div>
+
+    <!-- Tabel User -->
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 70px;">Foto</th>
+            <th>ID User</th>
+            <th>Nama Lengkap</th>
+            <th>Email / Username</th>
+            <th>Hak Akses (Role)</th>
+            <th>Status Face ID</th>
+            <th style="width: 140px; text-align:center;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody">
+          <tr>
+            <td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">
+              Memuat data pengguna...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Tambah / Koreksi User -->
+<div id="userModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modalTitle">Tambah Pengguna Baru</h3>
+      <button class="close-btn" onclick="tutupModal()">&times;</button>
+    </div>
+
+    <form id="userForm" onsubmit="handleSimpanUser(event)">
+      <input type="hidden" id="userId">
+      <input type="hidden" id="userFotoBase64">
+      <input type="hidden" id="userFaceDescriptor">
+
+      <div class="form-group">
+        <label for="userName">Nama Lengkap *</label>
+        <input type="text" id="userName" placeholder="Contoh: Ustadz Ahmad, M.Pd" required>
+      </div>
+
+      <div class="form-group">
+        <label for="userEmail">Email / Username Login *</label>
+        <input type="text" id="userEmail" placeholder="Contoh: ahmad@binailmu.sch.id" required>
+      </div>
+
+      <div class="form-group">
+        <label for="userPin">PIN Sandi (Opsional saat koreksi)</label>
+        <input type="password" id="userPin" placeholder="Masukkan 4-8 digit PIN baru (kosongkan jika tidak diganti)">
+      </div>
+
+      <div class="form-group">
+        <label for="userRole">Hak Akses / Role *</label>
+        <select id="userRole" required>
+          <option value="Guru">Guru / Staf Pengajar</option>
+          <option value="Kepala Sekolah">Kepala Sekolah</option>
+          <option value="Mudir">Mudir (Pimpinan Utama)</option>
+          <option value="Orang Tua">Orang Tua Murid</option>
+        </select>
+      </div>
+
+      <!-- Area Pengambilan / Upload Foto untuk Deteksi Wajah -->
+      <div class="form-group">
+        <label>Foto Profil & Deteksi Wajah Face ID</label>
+        <div class="face-capture-area">
+          <img id="photoPreview" class="photo-preview" src="https://via.placeholder.com/110?text=Foto" alt="Preview Foto">
+          <video id="cameraVideo" class="camera-preview" autoplay playsinline></video>
+
+          <div style="display:flex; justify-content:center; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <label class="btn-action" style="background:var(--primary); color:white; cursor:pointer; padding:8px 14px;">
+              📁 Unggah File Foto
+              <input type="file" id="filePhotoInput" accept="image/*" style="display:none;" onchange="handleFileUpload(event)">
+            </label>
+            <button type="button" id="btnToggleCamera" class="btn-action" style="background:var(--accent); color:white; padding:8px 14px;" onclick="toggleCamera()">
+              📷 Buka Kamera
+            </button>
+            <button type="button" id="btnSnapPhoto" class="btn-action" style="background:var(--success); color:white; padding:8px 14px; display:none;" onclick="ambilFotoKamera()">
+              📸 Jepret Foto
+            </button>
+          </div>
+          <div id="faceStatus" class="face-status">Pilih foto dengan wajah jelas untuk login Face Recognition.</div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="tutupModal()">Batal</button>
+        <button type="submit" id="btnSubmitUser" class="btn-primary">💾 Simpan Data Pengguna</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwfuIjsavW4QwHFhKxJaI1HjHZGx-16Y95K0EpCEzsljG7MnHnPrkTDMSOUYKT2tVfW0Q/exec";
+  const ROLE = localStorage.getItem('user_role');
+
+  // Proteksi Akses Khusus Role Mudir
+  if (!localStorage.getItem('auth_token') || (ROLE !== 'Mudir' && ROLE !== 'Pimpinan')) {
+    // Izinkan juga jika user role admin
+    if (localStorage.getItem('user_role') !== 'Administrator') {
+      window.location.href = 'index.html';
+    }
+  }
+
+  document.getElementById('namaMudir').textContent = localStorage.getItem('user_nama') || 'Mudir';
+
+  let listUserCache = [];
+  let cameraStream = null;
+  let faceApiLoaded = false;
+
+  // Inisialisasi Model Face-API.js
+  async function initFaceAPI() {
+    try {
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      faceApiLoaded = true;
+      console.log("Model Face-API berhasil dimuat!");
+    } catch(err) {
+      console.warn("Gagal memuat model online face-api, deteksi tetap bisa upload foto normal:", err);
+    }
+  }
+
+  // Load User Data
+  function loadUserData() {
+    const tbody = document.getElementById('userTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">Memuat data pengguna...</td></tr>';
+
+    fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'getUsers' })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok && Array.isArray(res.data)) {
+        listUserCache = res.data;
+        renderUserTable(listUserCache);
+      } else {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger);">${res.message || "Gagal memuat pengguna"}</td></tr>`;
+      }
+    })
+    .catch(err => {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger);">Koneksi terganggu: ${err.message}</td></tr>`;
+    });
+  }
+
+  function renderUserTable(users) {
+    const tbody = document.getElementById('userTableBody');
+    if (!users || users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">Belum ada data pengguna yang terdaftar. Klik "Tambah Pengguna Baru".</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map((u, i) => {
+      let roleBadgeClass = 'role-guru';
+      if (u.role === 'Mudir') roleBadgeClass = 'role-mudir';
+      else if (u.role === 'Kepala Sekolah' || u.role === 'KepalaSekolah') roleBadgeClass = 'role-kepsek';
+      else if (u.role === 'Orang Tua' || u.role === 'OrangTua') roleBadgeClass = 'role-ortu';
+
+      const fotoSrc = u.foto || 'https://via.placeholder.com/50?text=User';
+      const faceStatus = u.hasFaceDescriptor
+        ? `<span class="badge-face face-yes">✓ Terdaftar</span>`
+        : `<span class="badge-face face-no">✗ Belum Ada</span>`;
+
+      return `
+        <tr>
+          <td>
+            <img src="${fotoSrc}" class="avatar-cell" onerror="this.src='https://via.placeholder.com/50?text=User'" alt="Avatar">
+          </td>
+          <td><strong>${u.id || '-'}</strong></td>
+          <td>${u.nama || '-'}</td>
+          <td>${u.email || '-'}</td>
+          <td><span class="badge-role ${roleBadgeClass}">${u.role}</span></td>
+          <td>${faceStatus}</td>
+          <td style="text-align:center;">
+            <div class="action-btn-group" style="justify-content:center;">
+              <button class="btn-action btn-edit" onclick="bukaModalEdit('${u.id}')">✏️ Koreksi</button>
+              <button class="btn-action btn-delete" onclick="konfirmasiHapusUser('${u.id}', '${u.nama}')">🗑️ Hapus</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function filterUserTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = listUserCache.filter(u =>
+      (u.nama && u.nama.toLowerCase().includes(q)) ||
+      (u.email && u.email.toLowerCase().includes(q)) ||
+      (u.id && u.id.toLowerCase().includes(q)) ||
+      (u.role && u.role.toLowerCase().includes(q))
+    );
+    renderUserTable(filtered);
+  }
+
+  // Modal Dialog Tambah / Koreksi
+  function bukaModalTambah() {
+    document.getElementById('modalTitle').textContent = 'Tambah Pengguna Baru';
+    document.getElementById('userId').value = '';
+    document.getElementById('userName').value = '';
+    document.getElementById('userEmail').value = '';
+    document.getElementById('userPin').value = '';
+    document.getElementById('userRole').value = 'Guru';
+    document.getElementById('userFotoBase64').value = '';
+    document.getElementById('userFaceDescriptor').value = '';
+    document.getElementById('photoPreview').src = 'https://via.placeholder.com/110?text=Foto';
+    setFaceStatus('Pilih foto dengan wajah jelas untuk dideteksi.', 'warning');
+    hentikanKamera();
+    document.getElementById('userModal').classList.add('active');
+  }
+
+  function bukaModalEdit(id) {
+    const user = listUserCache.find(u => u.id === id);
+    if (!user) return;
+
+    document.getElementById('modalTitle').textContent = 'Koreksi Data Pengguna';
+    document.getElementById('userId').value = user.id;
+    document.getElementById('userName').value = user.nama;
+    document.getElementById('userEmail').value = user.email;
+    document.getElementById('userPin').value = '';
+    document.getElementById('userRole').value = user.role;
+    document.getElementById('userFotoBase64').value = user.foto || '';
+    document.getElementById('userFaceDescriptor').value = '';
+    document.getElementById('photoPreview').src = user.foto || 'https://via.placeholder.com/110?text=Foto';
+
+    if (user.hasFaceDescriptor) {
+      setFaceStatus('✓ Data deteksi wajah sudah tersimpan.', 'success');
+    } else {
+      setFaceStatus('Belum ada data Face ID. Unggah foto untuk menambahkan.', 'warning');
+    }
+    hentikanKamera();
+    document.getElementById('userModal').classList.add('active');
+  }
+
+  function tutupModal() {
+    hentikanKamera();
+    document.getElementById('userModal').classList.remove('active');
+  }
+
+  function setFaceStatus(msg, type) {
+    const el = document.getElementById('faceStatus');
+    el.textContent = msg;
+    el.className = 'face-status ' + (type || '');
+  }
+
+  // Handle Unggah Foto dari File
+  async function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(evt) {
+      const dataUrl = evt.target.result;
+      document.getElementById('photoPreview').src = dataUrl;
+      document.getElementById('userFotoBase64').value = dataUrl;
+      await prosesDeteksiWajah(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Kamera Webcam
+  async function toggleCamera() {
+    const video = document.getElementById('cameraVideo');
+    const photo = document.getElementById('photoPreview');
+    const btnToggle = document.getElementById('btnToggleCamera');
+    const btnSnap = document.getElementById('btnSnapPhoto');
+
+    if (cameraStream) {
+      hentikanKamera();
+    } else {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        video.srcObject = cameraStream;
+        video.style.display = 'block';
+        photo.style.display = 'none';
+        btnToggle.textContent = '❌ Tutup Kamera';
+        btnSnap.style.display = 'inline-block';
+      } catch(err) {
+        alert('Gagal mengakses kamera: ' + err.message);
+      }
+    }
+  }
+
+  function hentikanKamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      cameraStream = null;
+    }
+    const video = document.getElementById('cameraVideo');
+    if (video) video.style.display = 'none';
+    const photo = document.getElementById('photoPreview');
+    if (photo) photo.style.display = 'block';
+    const btnToggle = document.getElementById('btnToggleCamera');
+    if (btnToggle) btnToggle.textContent = '📷 Buka Kamera';
+    const btnSnap = document.getElementById('btnSnapPhoto');
+    if (btnSnap) btnSnap.style.display = 'none';
+  }
+
+  async function ambilFotoKamera() {
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, 320, 240);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+    document.getElementById('photoPreview').src = dataUrl;
+    document.getElementById('userFotoBase64').value = dataUrl;
+    hentikanKamera();
+
+    await prosesDeteksiWajah(dataUrl);
+  }
+
+  // Deteksi & Ekstraksi Wajah dengan Face-API
+  async function prosesDeteksiWajah(imageSrc) {
+    setFaceStatus('Mendeteksi wajah pada foto...', 'warning');
+
+    if (!faceApiLoaded) {
+      setFaceStatus('Foto siap disimpan (Model Face-API belum selesai dimuat).', 'warning');
+      return;
+    }
+
+    try {
+      const img = new Image();
+      img.src = imageSrc;
+      await new Promise(res => img.onload = res);
+
+      const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (detection) {
+        const descriptorArray = Array.from(detection.descriptor);
+        document.getElementById('userFaceDescriptor').value = JSON.stringify(descriptorArray);
+        setFaceStatus('✅ Wajah berhasil dideteksi & siap untuk Face Recognition!', 'success');
+      } else {
+        setFaceStatus('⚠️ Wajah tidak terdeteksi jelas pada foto. Coba foto lain.', 'error');
+      }
+    } catch(err) {
+      console.warn('Deteksi error:', err);
+      setFaceStatus('Foto tersimpan, namun deteksi Face ID otomatis terkendala.', 'warning');
+    }
+  }
+
+  // Handle Simpan User (Tambah / Koreksi)
+  function handleSimpanUser(e) {
+    e.preventDefault();
+    const btnSubmit = document.getElementById('btnSubmitUser');
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Menyimpan...';
+
+    const payload = {
+      action: 'simpanUser',
+      id: document.getElementById('userId').value,
+      nama: document.getElementById('userName').value,
+      email: document.getElementById('userEmail').value,
+      pin: document.getElementById('userPin').value,
+      role: document.getElementById('userRole').value,
+      foto: document.getElementById('userFotoBase64').value,
+      faceDescriptor: document.getElementById('userFaceDescriptor').value
+    };
+
+    fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(res => {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = '💾 Simpan Data Pengguna';
+
+      if (res.ok) {
+        alert(res.message || 'Data pengguna berhasil disimpan!');
+        tutupModal();
+        loadUserData();
+      } else {
+        alert('Gagal menyimpan: ' + (res.message || 'Terjadi kesalahan'));
+      }
+    })
+    .catch(err => {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = '💾 Simpan Data Pengguna';
+      alert('Kendala koneksi: ' + err.message);
+    });
+  }
+
+  // Konfirmasi & Eksekusi Hapus User
+  function konfirmasiHapusUser(id, nama) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus pengguna "${nama}" (ID: ${id})?`)) {
+      return;
+    }
+
+    fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'hapusUser', id: id })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.ok) {
+        alert(res.message || 'Pengguna berhasil dihapus!');
+        loadUserData();
+      } else {
+        alert('Gagal menghapus: ' + (res.message || 'Terjadi kesalahan'));
+      }
+    })
+    .catch(err => {
+      alert('Kendala koneksi: ' + err.message);
+    });
+  }
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = 'index.html';
+  }
+
+  window.onload = function() {
+    initFaceAPI();
+    loadUserData();
+  };
+</script>
+</body>
+</html>
