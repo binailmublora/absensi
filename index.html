@@ -279,7 +279,6 @@
             <option value="Kepala Sekolah">Kepala Sekolah</option>
             <option value="Guru">Guru / Staf</option>
             <option value="Orang Tua">Orang Tua Murid</option>
-            <option value="Mudir">Mudir (Pimpinan Utama)</option>
           </select>
         </div>
         <div class="form-group">
@@ -444,16 +443,14 @@
   }
 
   function redirectByRole(role) {
-    if (role === 'Mudir' || role === 'Pimpinan') {
-      window.location.href = 'dashboard-mudir.html';
-    } else if (role === 'KepalaSekolah' || role === 'Kepala Sekolah') {
+    if (role === 'KepalaSekolah' || role === 'Kepala Sekolah') {
       window.location.href = 'dashboard-kepsek.html';
     } else if (role === 'Guru') {
       window.location.href = 'dashboard-guru.html';
     } else if (role === 'OrangTua' || role === 'Orang Tua') {
       window.location.href = 'dashboard-orangtua.html';
     } else {
-      window.location.href = 'dashboard-guru.html';
+      window.location.href = 'dashboard-kepsek.html';
     }
   }
 
@@ -555,7 +552,7 @@
         if (detection) {
           if (!faceMatcher) {
             statusEl.className = "status-error";
-            statusEl.innerText = "Wajah terdeteksi, namun belum ada profil wajah terdaftar di sistem. Hubungi Mudir.";
+            statusEl.innerText = "Wajah terdeteksi, namun belum ada profil wajah terdaftar di sistem. Hubungi Kepala Sekolah / Administrator.";
             return;
           }
 

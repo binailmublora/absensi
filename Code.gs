@@ -130,17 +130,17 @@ function processRequest(requestData) {
       return simpanKalender(requestData);
     }
 
-    // 13. Kelola User: Ambil daftar user (Role Mudir)
+    // 13. Kelola User: Ambil daftar user (Manajemen Pengguna)
     if (action === "getUsers" || action === "getDataUser") {
       return getUsers();
     }
 
-    // 14. Kelola User: Simpan (Tambah / Koreksi) user beserta foto & face descriptor (Role Mudir)
+    // 14. Kelola User: Simpan (Tambah / Koreksi) user beserta foto & face descriptor
     if (action === "simpanUser" || action === "saveUser") {
       return simpanUser(requestData);
     }
 
-    // 15. Kelola User: Hapus user (Role Mudir)
+    // 15. Kelola User: Hapus user
     if (action === "hapusUser" || action === "deleteUser") {
       return hapusUser(requestData);
     }
@@ -642,7 +642,6 @@ function loginPortal(requestData) {
     if (roleInput === "Orang Tua" || roleInput === "OrangTua") standardRole = "OrangTua";
     else if (roleInput === "Guru") standardRole = "Guru";
     else if (roleInput === "Kepala Sekolah" || roleInput === "KepalaSekolah") standardRole = "KepalaSekolah";
-    else if (roleInput === "Mudir" || roleInput === "mudir" || roleInput === "Pimpinan") standardRole = "Mudir";
 
     if (!standardRole || !usernameInput || !passwordInput) {
       return { ok: false, msg: "Lengkapi data login Anda!" };
@@ -708,16 +707,11 @@ function loginPortal(requestData) {
 
     // Sistem Fallback Khusus untuk testing/setup awal:
     if (!authenticated) {
-      if ((usernameInput.indexOf("mudir") !== -1 || usernameInput.indexOf("admin") !== -1) && passwordInput === "1234") {
-        authenticated = true;
-        userNama = "Mudir Pesantren / Sekolah";
-        idTerkait = "MDR001";
-        if (!standardRole) standardRole = "Mudir";
-      } else if (usernameInput.indexOf("guru") !== -1 && passwordInput === "1234") {
+      if (usernameInput.indexOf("guru") !== -1 && passwordInput === "1234") {
         authenticated = true;
         userNama = "Staf Guru Pengajar";
         idTerkait = "GRU002";
-      } else if (usernameInput.indexOf("kepsek") !== -1 && passwordInput === "1234") {
+      } else if ((usernameInput.indexOf("kepsek") !== -1 || usernameInput.indexOf("admin") !== -1) && passwordInput === "1234") {
         authenticated = true;
         userNama = "Kepala Sekolah";
         idTerkait = "KPS001";
@@ -1108,7 +1102,7 @@ function formatTanggalYYYYMMDD(val) {
 }
 
 // =========================================================================
-// 14. MANAJEMEN USER OLEH MUDIR (CRUD USER & FOTO WAJAH)
+// 14. MANAJEMEN USER (CRUD USER & FOTO WAJAH)
 // =========================================================================
 
 /**
@@ -1128,7 +1122,7 @@ function getOrCreateUserSheet_() {
 }
 
 /**
- * Mendapatkan daftar seluruh user untuk Role Mudir
+ * Mendapatkan daftar seluruh user untuk Manajemen Pengguna
  */
 function getUsers() {
   try {
@@ -1230,8 +1224,7 @@ function simpanUser(requestData) {
     // Generate ID otomatis jika kosong
     if (!idTarget) {
       var prefix = "USR";
-      if (roleBaru === "Mudir") prefix = "MDR";
-      else if (roleBaru === "Kepala Sekolah" || roleBaru === "KepalaSekolah") prefix = "KPS";
+      if (roleBaru === "Kepala Sekolah" || roleBaru === "KepalaSekolah") prefix = "KPS";
       else if (roleBaru === "Guru") prefix = "GRU";
       else if (roleBaru === "Orang Tua" || roleBaru === "OrangTua") prefix = "ORT";
       idTarget = prefix + Math.floor(1000 + Math.random() * 9000);
@@ -1366,8 +1359,7 @@ function getFaceProfiles() {
 
         // Standardize role for frontend redirect
         var standardRole = roleVal;
-        if (roleVal.toLowerCase().indexOf("mudir") !== -1 || roleVal.toLowerCase().indexOf("pimpinan") !== -1) standardRole = "Mudir";
-        else if (roleVal.toLowerCase().indexOf("kepala") !== -1 || roleVal.toLowerCase().indexOf("kepsek") !== -1) standardRole = "KepalaSekolah";
+        if (roleVal.toLowerCase().indexOf("kepala") !== -1 || roleVal.toLowerCase().indexOf("kepsek") !== -1) standardRole = "KepalaSekolah";
         else if (roleVal.toLowerCase().indexOf("guru") !== -1) standardRole = "Guru";
         else if (roleVal.toLowerCase().indexOf("orang") !== -1 || roleVal.toLowerCase().indexOf("ortu") !== -1) standardRole = "OrangTua";
 

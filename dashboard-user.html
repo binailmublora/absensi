@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Mudir - Manajemen Pengguna & Face ID</title>
+  <title>Manajemen Pengguna & Face ID</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Load Face-API.js untuk ekstraksi deskriptor wajah -->
   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
@@ -188,7 +188,6 @@
       font-weight: 600;
     }
 
-    .role-mudir { background: #fef3c7; color: #92400e; }
     .role-kepsek { background: #e0e7ff; color: #3730a3; }
     .role-guru { background: #d1fae5; color: #065f46; }
     .role-ortu { background: #f1f5f9; color: #475569; }
@@ -356,14 +355,14 @@
 <body>
 
 <div class="container">
-  <!-- Header Mudir & Kepala Sekolah -->
+  <!-- Header Kepala Sekolah / Admin -->
   <div class="header">
     <div>
       <h1>Portal Manajemen Pengguna & Face ID</h1>
-      <p>Ahlan wa sahlan <strong id="namaMudir">...</strong> | Konfigurasi Pengguna & Pendaftaran Wajah</p>
+      <p>Ahlan wa sahlan <strong id="namaUser">...</strong> | Konfigurasi Pengguna & Pendaftaran Wajah</p>
     </div>
     <div class="header-actions">
-      <a href="dashboard-kepsek.html" class="btn-header">Dashboard Kepsek</a>
+      <a href="dashboard-kepsek.html" class="btn-header">Kembali ke Dashboard</a>
       <button onclick="logout()" class="btn-header" style="background:#dc3545;">Keluar</button>
     </div>
   </div>
@@ -444,7 +443,6 @@
         <select id="userRole" required>
           <option value="Guru">Guru / Staf Pengajar</option>
           <option value="Kepala Sekolah">Kepala Sekolah</option>
-          <option value="Mudir">Mudir (Pimpinan Utama)</option>
           <option value="Orang Tua">Orang Tua Murid</option>
         </select>
       </div>
@@ -484,15 +482,15 @@
   const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwfuIjsavW4QwHFhKxJaI1HjHZGx-16Y95K0EpCEzsljG7MnHnPrkTDMSOUYKT2tVfW0Q/exec";
   const ROLE = (localStorage.getItem('user_role') || '').trim();
 
-  // Proteksi Akses: Izinkan Kepala Sekolah, Mudir, Pimpinan, dan Administrator
-  const allowedRoles = ['KepalaSekolah', 'Kepala Sekolah', 'Mudir', 'Pimpinan', 'Administrator'];
+  // Proteksi Akses: Izinkan Kepala Sekolah dan Administrator
+  const allowedRoles = ['KepalaSekolah', 'Kepala Sekolah', 'Administrator', 'Admin'];
   const hasAccess = localStorage.getItem('auth_token') && allowedRoles.some(r => r.toLowerCase() === ROLE.toLowerCase());
 
   if (!hasAccess) {
     window.location.href = 'index.html';
   }
 
-  document.getElementById('namaMudir').textContent = localStorage.getItem('user_nama') || 'Pimpinan Sekolah';
+  document.getElementById('namaUser').textContent = localStorage.getItem('user_nama') || 'Kepala Sekolah';
 
   let listUserCache = [];
   let cameraStream = null;
@@ -545,8 +543,7 @@
 
     tbody.innerHTML = users.map((u, i) => {
       let roleBadgeClass = 'role-guru';
-      if (u.role === 'Mudir') roleBadgeClass = 'role-mudir';
-      else if (u.role === 'Kepala Sekolah' || u.role === 'KepalaSekolah') roleBadgeClass = 'role-kepsek';
+      if (u.role === 'Kepala Sekolah' || u.role === 'KepalaSekolah') roleBadgeClass = 'role-kepsek';
       else if (u.role === 'Orang Tua' || u.role === 'OrangTua') roleBadgeClass = 'role-ortu';
 
       const fotoSrc = u.foto || 'https://via.placeholder.com/50?text=User';
