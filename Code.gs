@@ -1116,14 +1116,14 @@ function formatTanggalYYYYMMDD(val) {
  */
 function getOrCreateUserSheet_() {
   var ss = SS_();
-  var sheetNames = ["User", "Users", "Data_User"];
+  var sheetNames = ["User", "Users", "Data_User", "Akun", "PIN"];
   for (var i = 0; i < sheetNames.length; i++) {
     var sh = ss.getSheetByName(sheetNames[i]);
     if (sh) return sh;
   }
   // Buat sheet baru jika belum tersedia
   var newSh = ss.insertSheet("User");
-  newSh.appendRow(["ID", "Nama", "Email", "PIN", "Role", "Foto", "FaceDescriptor", "Dibuat"]);
+  newSh.appendRow(["Email", "Nama", "Role", "ID_Terkait", "PIN", "Foto", "FaceDescriptor"]);
   return newSh;
 }
 
@@ -1138,7 +1138,7 @@ function getUsers() {
 
     if (d.length > 1) {
       var headers = d[0].map(function(h) { return h.toString().toLowerCase().trim(); });
-      var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
+      var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
       var idxNama = headers.findIndex(function(h) { return h.indexOf("nama") !== -1; });
       var idxEmail = headers.findIndex(function(h) { return h.indexOf("email") !== -1 || h.indexOf("username") !== -1; });
       var idxPin = headers.findIndex(function(h) { return h.indexOf("pin") !== -1 || h.indexOf("pass") !== -1 || h.indexOf("sandi") !== -1; });
@@ -1146,11 +1146,11 @@ function getUsers() {
       var idxFoto = headers.findIndex(function(h) { return h.indexOf("foto") !== -1 || h.indexOf("photo") !== -1 || h.indexOf("gambar") !== -1; });
       var idxDescriptor = headers.findIndex(function(h) { return h.indexOf("descriptor") !== -1 || h.indexOf("face") !== -1; });
 
-      if (idxId === -1) idxId = 0;
       if (idxNama === -1) idxNama = 1;
-      if (idxEmail === -1) idxEmail = 2;
-      if (idxPin === -1) idxPin = 3;
-      if (idxRole === -1) idxRole = 4;
+      if (idxEmail === -1) idxEmail = 0;
+      if (idxPin === -1) idxPin = 4;
+      if (idxRole === -1) idxRole = 2;
+      if (idxId === -1) idxId = 3;
 
       for (var i = 1; i < d.length; i++) {
         var row = d[i];
@@ -1190,7 +1190,7 @@ function simpanUser(requestData) {
     var d = sh.getDataRange().getValues();
     var headers = d[0].map(function(h) { return h.toString().toLowerCase().trim(); });
 
-    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
+    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
     var idxNama = headers.findIndex(function(h) { return h.indexOf("nama") !== -1; });
     var idxEmail = headers.findIndex(function(h) { return h.indexOf("email") !== -1 || h.indexOf("username") !== -1; });
     var idxPin = headers.findIndex(function(h) { return h.indexOf("pin") !== -1 || h.indexOf("pass") !== -1 || h.indexOf("sandi") !== -1; });
@@ -1199,11 +1199,11 @@ function simpanUser(requestData) {
     var idxDescriptor = headers.findIndex(function(h) { return h.indexOf("descriptor") !== -1 || h.indexOf("face") !== -1; });
 
     // Tambahkan kolom jika belum tersedia
-    if (idxId === -1) { sh.getRange(1, headers.length + 1).setValue("ID"); idxId = headers.length; headers.push("id"); }
-    if (idxNama === -1) { sh.getRange(1, headers.length + 1).setValue("Nama"); idxNama = headers.length; headers.push("nama"); }
     if (idxEmail === -1) { sh.getRange(1, headers.length + 1).setValue("Email"); idxEmail = headers.length; headers.push("email"); }
-    if (idxPin === -1) { sh.getRange(1, headers.length + 1).setValue("PIN"); idxPin = headers.length; headers.push("pin"); }
+    if (idxNama === -1) { sh.getRange(1, headers.length + 1).setValue("Nama"); idxNama = headers.length; headers.push("nama"); }
     if (idxRole === -1) { sh.getRange(1, headers.length + 1).setValue("Role"); idxRole = headers.length; headers.push("role"); }
+    if (idxId === -1) { sh.getRange(1, headers.length + 1).setValue("ID_Terkait"); idxId = headers.length; headers.push("id_terkait"); }
+    if (idxPin === -1) { sh.getRange(1, headers.length + 1).setValue("PIN"); idxPin = headers.length; headers.push("pin"); }
     if (idxFoto === -1) { sh.getRange(1, headers.length + 1).setValue("Foto"); idxFoto = headers.length; headers.push("foto"); }
     if (idxDescriptor === -1) { sh.getRange(1, headers.length + 1).setValue("FaceDescriptor"); idxDescriptor = headers.length; headers.push("facedescriptor"); }
 
@@ -1346,15 +1346,15 @@ function getFaceProfiles() {
 
     if (d.length > 1) {
       var headers = d[0].map(function(h) { return h.toString().toLowerCase().trim(); });
-      var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
+    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
       var idxNama = headers.findIndex(function(h) { return h.indexOf("nama") !== -1; });
       var idxRole = headers.findIndex(function(h) { return h.indexOf("role") !== -1 || h.indexOf("jabatan") !== -1; });
       var idxFoto = headers.findIndex(function(h) { return h.indexOf("foto") !== -1 || h.indexOf("photo") !== -1 || h.indexOf("gambar") !== -1; });
       var idxDescriptor = headers.findIndex(function(h) { return h.indexOf("descriptor") !== -1 || h.indexOf("face") !== -1; });
 
-      if (idxId === -1) idxId = 0;
       if (idxNama === -1) idxNama = 1;
-      if (idxRole === -1) idxRole = 4;
+    if (idxRole === -1) idxRole = 2;
+    if (idxId === -1) idxId = 3;
 
       for (var i = 1; i < d.length; i++) {
         var row = d[i];
