@@ -1303,7 +1303,7 @@ function hapusUser(requestData) {
     }
 
     var headers = d[0].map(function(h) { return h.toString().toLowerCase().trim(); });
-    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
+    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
     var idxEmail = headers.findIndex(function(h) { return h.indexOf("email") !== -1 || h.indexOf("username") !== -1; });
 
     var targetId = requestData.id ? requestData.id.toString().trim() : "";
