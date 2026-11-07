@@ -205,11 +205,12 @@
     .action-btn-group {
       display: flex;
       gap: 6px;
+      flex-wrap: wrap;
     }
 
     .btn-action {
       border: none;
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 6px;
       font-size: 12px;
       font-weight: 600;
@@ -219,6 +220,7 @@
 
     .btn-edit { background: var(--accent); color: var(--white); }
     .btn-delete { background: var(--danger); color: var(--white); }
+    .btn-record { background: #0284c7; color: var(--white); }
 
     /* Modal Form User */
     .modal-overlay {
@@ -410,6 +412,53 @@
   </div>
 </div>
 
+<!-- Modal Rekam Wajah Cepat Pengguna yang Ada -->
+<div id="quickFaceModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="quickModalTitle">Rekam Wajah Pengguna</h3>
+      <button class="close-btn" onclick="tutupQuickFaceModal()">&times;</button>
+    </div>
+
+    <form id="quickFaceForm" onsubmit="handleSimpanQuickFace(event)">
+      <input type="hidden" id="quickUserId">
+      <input type="hidden" id="quickUserFotoBase64">
+      <input type="hidden" id="quickUserFaceDescriptor">
+
+      <div style="margin-bottom: 12px; font-size: 14px;">
+        Nama Pengguna: <strong id="quickUserName">-</strong> (<span id="quickUserRole">-</span>)
+      </div>
+
+      <div class="form-group">
+        <label>Ambil Foto Wajah untuk Pendaftaran Face Recognition</label>
+        <div class="face-capture-area">
+          <img id="quickPhotoPreview" class="photo-preview" src="https://via.placeholder.com/110?text=Foto" alt="Preview Foto">
+          <video id="quickCameraVideo" class="camera-preview" autoplay playsinline></video>
+
+          <div style="display:flex; justify-content:center; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <label class="btn-action" style="background:var(--primary); color:white; cursor:pointer; padding:8px 14px;">
+              📁 Unggah Foto
+              <input type="file" id="quickFilePhotoInput" accept="image/*" style="display:none;" onchange="handleQuickFileUpload(event)">
+            </label>
+            <button type="button" id="btnQuickToggleCamera" class="btn-action" style="background:var(--accent); color:white; padding:8px 14px;" onclick="toggleQuickCamera()">
+              📷 Buka Kamera
+            </button>
+            <button type="button" id="btnQuickSnapPhoto" class="btn-action" style="background:var(--success); color:white; padding:8px 14px; display:none;" onclick="ambilFotoQuickKamera()">
+              📸 Jepret Foto
+            </button>
+          </div>
+          <div id="quickFaceStatus" class="face-status">Posisikan wajah menghadap lurus ke kamera.</div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="tutupQuickFaceModal()">Batal</button>
+        <button type="submit" id="btnSubmitQuickFace" class="btn-primary">💾 Simpan Rekaman Wajah</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal Tambah / Koreksi User -->
 <div id="userModal" class="modal-overlay">
   <div class="modal-card">
@@ -479,7 +528,7 @@
 </div>
 
 <script>
-  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwfuIjsavW4QwHFhKxJaI1HjHZGx-16Y95K0EpCEzsljG7MnHnPrkTDMSOUYKT2tVfW0Q/exec";
+  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwKgBffn77lr279CjkOS2e3mDEKqriIHNbIiIO8bcI6tRQ_jcyIm-OkJvMfLJ3dQgf2/exec";
   const ROLE = (localStorage.getItem('user_role') || '').trim();
 
   // Proteksi Akses: Izinkan Kepala Sekolah dan Administrator
@@ -494,6 +543,7 @@
 
   let listUserCache = [];
   let cameraStream = null;
+  let quickCameraStream = null;
   let faceApiLoaded = false;
 
   // Inisialisasi Model Face-API.js
@@ -563,6 +613,7 @@
           <td>${faceStatus}</td>
           <td style="text-align:center;">
             <div class="action-btn-group" style="justify-content:center;">
+              <button class="btn-action btn-record" onclick="bukaModalRekamWajah('${u.id}')" title="Ambil/Unggah foto untuk deteksi wajah">📸 Rekam Wajah</button>
               <button class="btn-action btn-edit" onclick="bukaModalEdit('${u.id}')">✏️ Koreksi</button>
               <button class="btn-action btn-delete" onclick="konfirmasiHapusUser('${u.id}', '${u.nama}')">🗑️ Hapus</button>
             </div>
@@ -797,6 +848,191 @@
       }
     })
     .catch(err => {
+      alert('Kendala koneksi: ' + err.message);
+    });
+  }
+
+  // ==========================================
+  // MODAL CEPAT REKAM WAJAH UNTUK USER YANG ADA
+  // ==========================================
+  function bukaModalRekamWajah(id) {
+    const user = listUserCache.find(u => u.id === id);
+    if (!user) return;
+
+    document.getElementById('quickUserId').value = user.id;
+    document.getElementById('quickUserName').textContent = user.nama;
+    document.getElementById('quickUserRole').textContent = user.role;
+    document.getElementById('quickUserFotoBase64').value = user.foto || '';
+    document.getElementById('quickUserFaceDescriptor').value = '';
+    document.getElementById('quickPhotoPreview').src = user.foto || 'https://via.placeholder.com/110?text=Foto';
+
+    if (user.hasFaceDescriptor) {
+      setQuickFaceStatus('✓ User sudah memiliki rekaman Face ID. Anda bisa merekam ulang foto baru jika diinginkan.', 'success');
+    } else {
+      setQuickFaceStatus('Belum ada rekaman Face ID. Silakan jepret atau unggah foto wajah.', 'warning');
+    }
+
+    hentikanQuickKamera();
+    document.getElementById('quickFaceModal').classList.add('active');
+  }
+
+  function tutupQuickFaceModal() {
+    hentikanQuickKamera();
+    document.getElementById('quickFaceModal').classList.remove('active');
+  }
+
+  function setQuickFaceStatus(msg, type) {
+    const el = document.getElementById('quickFaceStatus');
+    el.textContent = msg;
+    el.className = 'face-status ' + (type || '');
+  }
+
+  async function toggleQuickCamera() {
+    const video = document.getElementById('quickCameraVideo');
+    const photo = document.getElementById('quickPhotoPreview');
+    const btnToggle = document.getElementById('btnQuickToggleCamera');
+    const btnSnap = document.getElementById('btnQuickSnapPhoto');
+
+    if (quickCameraStream) {
+      hentikanQuickKamera();
+    } else {
+      try {
+        quickCameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        video.srcObject = quickCameraStream;
+        video.style.display = 'block';
+        photo.style.display = 'none';
+        btnToggle.textContent = '❌ Tutup Kamera';
+        btnSnap.style.display = 'inline-block';
+      } catch(err) {
+        alert('Gagal mengakses kamera: ' + err.message);
+      }
+    }
+  }
+
+  function hentikanQuickKamera() {
+    if (quickCameraStream) {
+      quickCameraStream.getTracks().forEach(t => t.stop());
+      quickCameraStream = null;
+    }
+    const video = document.getElementById('quickCameraVideo');
+    if (video) video.style.display = 'none';
+    const photo = document.getElementById('quickPhotoPreview');
+    if (photo) photo.style.display = 'block';
+    const btnToggle = document.getElementById('btnQuickToggleCamera');
+    if (btnToggle) btnToggle.textContent = '📷 Buka Kamera';
+    const btnSnap = document.getElementById('btnQuickSnapPhoto');
+    if (btnSnap) btnSnap.style.display = 'none';
+  }
+
+  async function ambilFotoQuickKamera() {
+    const video = document.getElementById('quickCameraVideo');
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, 320, 240);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+    document.getElementById('quickPhotoPreview').src = dataUrl;
+    document.getElementById('quickUserFotoBase64').value = dataUrl;
+    hentikanQuickKamera();
+
+    await prosesDeteksiQuickWajah(dataUrl);
+  }
+
+  async function handleQuickFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(evt) {
+      const dataUrl = evt.target.result;
+      document.getElementById('quickPhotoPreview').src = dataUrl;
+      document.getElementById('quickUserFotoBase64').value = dataUrl;
+      await prosesDeteksiQuickWajah(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function prosesDeteksiQuickWajah(imageSrc) {
+    setQuickFaceStatus('Mendeteksi wajah pada foto...', 'warning');
+
+    if (!faceApiLoaded) {
+      setQuickFaceStatus('Foto siap disimpan (Model Face-API belum selesai dimuat).', 'warning');
+      return;
+    }
+
+    try {
+      const img = new Image();
+      img.src = imageSrc;
+      await new Promise(res => img.onload = res);
+
+      const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (detection) {
+        const descriptorArray = Array.from(detection.descriptor);
+        document.getElementById('quickUserFaceDescriptor').value = JSON.stringify(descriptorArray);
+        setQuickFaceStatus('✅ Wajah berhasil dideteksi & siap untuk Face Recognition!', 'success');
+      } else {
+        setQuickFaceStatus('⚠️ Wajah tidak terdeteksi jelas pada foto. Coba foto lain.', 'error');
+      }
+    } catch(err) {
+      console.warn('Deteksi error:', err);
+      setQuickFaceStatus('Foto tersimpan, namun deteksi Face ID otomatis terkendala.', 'warning');
+    }
+  }
+
+  function handleSimpanQuickFace(e) {
+    e.preventDefault();
+    const id = document.getElementById('quickUserId').value;
+    const user = listUserCache.find(u => u.id === id);
+    if (!user) return;
+
+    const foto = document.getElementById('quickUserFotoBase64').value;
+    const faceDescriptor = document.getElementById('quickUserFaceDescriptor').value;
+
+    if (!foto) {
+      alert('Harap rekam atau unggah foto wajah terlebih dahulu!');
+      return;
+    }
+
+    const btnSubmit = document.getElementById('btnSubmitQuickFace');
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Menyimpan Rekaman...';
+
+    const payload = {
+      action: 'simpanUser',
+      id: user.id,
+      nama: user.nama,
+      email: user.email,
+      role: user.role,
+      foto: foto,
+      faceDescriptor: faceDescriptor
+    };
+
+    fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(res => {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = '💾 Simpan Rekaman Wajah';
+
+      if (res.ok) {
+        alert(res.message || 'Rekaman wajah pengguna berhasil disimpan!');
+        tutupQuickFaceModal();
+        loadUserData();
+      } else {
+        alert('Gagal menyimpan rekaman wajah: ' + (res.message || 'Terjadi kesalahan'));
+      }
+    })
+    .catch(err => {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = '💾 Simpan Rekaman Wajah';
       alert('Kendala koneksi: ' + err.message);
     });
   }
