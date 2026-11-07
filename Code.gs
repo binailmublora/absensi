@@ -130,17 +130,17 @@ function processRequest(requestData) {
       return simpanKalender(requestData);
     }
 
-    // 13. Kelola User: Ambil daftar user (Role Mudir)
+    // 13. Kelola User: Ambil daftar user (Manajemen Pengguna)
     if (action === "getUsers" || action === "getDataUser") {
       return getUsers();
     }
 
-    // 14. Kelola User: Simpan (Tambah / Koreksi) user beserta foto & face descriptor (Role Mudir)
+    // 14. Kelola User: Simpan (Tambah / Koreksi) user beserta foto & face descriptor
     if (action === "simpanUser" || action === "saveUser") {
       return simpanUser(requestData);
     }
 
-    // 15. Kelola User: Hapus user (Role Mudir)
+    // 15. Kelola User: Hapus user
     if (action === "hapusUser" || action === "deleteUser") {
       return hapusUser(requestData);
     }
@@ -642,7 +642,6 @@ function loginPortal(requestData) {
     if (roleInput === "Orang Tua" || roleInput === "OrangTua") standardRole = "OrangTua";
     else if (roleInput === "Guru") standardRole = "Guru";
     else if (roleInput === "Kepala Sekolah" || roleInput === "KepalaSekolah") standardRole = "KepalaSekolah";
-    else if (roleInput === "Mudir" || roleInput === "mudir" || roleInput === "Pimpinan") standardRole = "Mudir";
 
     if (!standardRole || !usernameInput || !passwordInput) {
       return { ok: false, msg: "Lengkapi data login Anda!" };
@@ -708,16 +707,11 @@ function loginPortal(requestData) {
 
     // Sistem Fallback Khusus untuk testing/setup awal:
     if (!authenticated) {
-      if ((usernameInput.indexOf("mudir") !== -1 || usernameInput.indexOf("admin") !== -1) && passwordInput === "1234") {
-        authenticated = true;
-        userNama = "Mudir Pesantren / Sekolah";
-        idTerkait = "MDR001";
-        if (!standardRole) standardRole = "Mudir";
-      } else if (usernameInput.indexOf("guru") !== -1 && passwordInput === "1234") {
+      if (usernameInput.indexOf("guru") !== -1 && passwordInput === "1234") {
         authenticated = true;
         userNama = "Staf Guru Pengajar";
         idTerkait = "GRU002";
-      } else if (usernameInput.indexOf("kepsek") !== -1 && passwordInput === "1234") {
+      } else if ((usernameInput.indexOf("kepsek") !== -1 || usernameInput.indexOf("admin") !== -1) && passwordInput === "1234") {
         authenticated = true;
         userNama = "Kepala Sekolah";
         idTerkait = "KPS001";
@@ -1108,7 +1102,7 @@ function formatTanggalYYYYMMDD(val) {
 }
 
 // =========================================================================
-// 14. MANAJEMEN USER OLEH MUDIR (CRUD USER & FOTO WAJAH)
+// 14. MANAJEMEN USER (CRUD USER & FOTO WAJAH)
 // =========================================================================
 
 /**
@@ -1116,19 +1110,19 @@ function formatTanggalYYYYMMDD(val) {
  */
 function getOrCreateUserSheet_() {
   var ss = SS_();
-  var sheetNames = ["User", "Users", "Data_User"];
+  var sheetNames = ["User", "Users", "Data_User", "Akun", "PIN"];
   for (var i = 0; i < sheetNames.length; i++) {
     var sh = ss.getSheetByName(sheetNames[i]);
     if (sh) return sh;
   }
   // Buat sheet baru jika belum tersedia
   var newSh = ss.insertSheet("User");
-  newSh.appendRow(["ID", "Nama", "Email", "PIN", "Role", "Foto", "FaceDescriptor", "Dibuat"]);
+  newSh.appendRow(["Email", "Nama", "Role", "ID_Terkait", "PIN", "Foto", "FaceDescriptor"]);
   return newSh;
 }
 
 /**
- * Mendapatkan daftar seluruh user untuk Role Mudir
+ * Mendapatkan daftar seluruh user untuk Manajemen Pengguna
  */
 function getUsers() {
   try {
@@ -1138,7 +1132,7 @@ function getUsers() {
 
     if (d.length > 1) {
       var headers = d[0].map(function(h) { return h.toString().toLowerCase().trim(); });
-      var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
+      var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
       var idxNama = headers.findIndex(function(h) { return h.indexOf("nama") !== -1; });
       var idxEmail = headers.findIndex(function(h) { return h.indexOf("email") !== -1 || h.indexOf("username") !== -1; });
       var idxPin = headers.findIndex(function(h) { return h.indexOf("pin") !== -1 || h.indexOf("pass") !== -1 || h.indexOf("sandi") !== -1; });
@@ -1146,11 +1140,11 @@ function getUsers() {
       var idxFoto = headers.findIndex(function(h) { return h.indexOf("foto") !== -1 || h.indexOf("photo") !== -1 || h.indexOf("gambar") !== -1; });
       var idxDescriptor = headers.findIndex(function(h) { return h.indexOf("descriptor") !== -1 || h.indexOf("face") !== -1; });
 
-      if (idxId === -1) idxId = 0;
       if (idxNama === -1) idxNama = 1;
-      if (idxEmail === -1) idxEmail = 2;
-      if (idxPin === -1) idxPin = 3;
-      if (idxRole === -1) idxRole = 4;
+      if (idxEmail === -1) idxEmail = 0;
+      if (idxPin === -1) idxPin = 4;
+      if (idxRole === -1) idxRole = 2;
+      if (idxId === -1) idxId = 3;
 
       for (var i = 1; i < d.length; i++) {
         var row = d[i];
@@ -1190,7 +1184,7 @@ function simpanUser(requestData) {
     var d = sh.getDataRange().getValues();
     var headers = d[0].map(function(h) { return h.toString().toLowerCase().trim(); });
 
-    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
+    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
     var idxNama = headers.findIndex(function(h) { return h.indexOf("nama") !== -1; });
     var idxEmail = headers.findIndex(function(h) { return h.indexOf("email") !== -1 || h.indexOf("username") !== -1; });
     var idxPin = headers.findIndex(function(h) { return h.indexOf("pin") !== -1 || h.indexOf("pass") !== -1 || h.indexOf("sandi") !== -1; });
@@ -1199,11 +1193,11 @@ function simpanUser(requestData) {
     var idxDescriptor = headers.findIndex(function(h) { return h.indexOf("descriptor") !== -1 || h.indexOf("face") !== -1; });
 
     // Tambahkan kolom jika belum tersedia
-    if (idxId === -1) { sh.getRange(1, headers.length + 1).setValue("ID"); idxId = headers.length; headers.push("id"); }
-    if (idxNama === -1) { sh.getRange(1, headers.length + 1).setValue("Nama"); idxNama = headers.length; headers.push("nama"); }
     if (idxEmail === -1) { sh.getRange(1, headers.length + 1).setValue("Email"); idxEmail = headers.length; headers.push("email"); }
-    if (idxPin === -1) { sh.getRange(1, headers.length + 1).setValue("PIN"); idxPin = headers.length; headers.push("pin"); }
+    if (idxNama === -1) { sh.getRange(1, headers.length + 1).setValue("Nama"); idxNama = headers.length; headers.push("nama"); }
     if (idxRole === -1) { sh.getRange(1, headers.length + 1).setValue("Role"); idxRole = headers.length; headers.push("role"); }
+    if (idxId === -1) { sh.getRange(1, headers.length + 1).setValue("ID_Terkait"); idxId = headers.length; headers.push("id_terkait"); }
+    if (idxPin === -1) { sh.getRange(1, headers.length + 1).setValue("PIN"); idxPin = headers.length; headers.push("pin"); }
     if (idxFoto === -1) { sh.getRange(1, headers.length + 1).setValue("Foto"); idxFoto = headers.length; headers.push("foto"); }
     if (idxDescriptor === -1) { sh.getRange(1, headers.length + 1).setValue("FaceDescriptor"); idxDescriptor = headers.length; headers.push("facedescriptor"); }
 
@@ -1230,8 +1224,7 @@ function simpanUser(requestData) {
     // Generate ID otomatis jika kosong
     if (!idTarget) {
       var prefix = "USR";
-      if (roleBaru === "Mudir") prefix = "MDR";
-      else if (roleBaru === "Kepala Sekolah" || roleBaru === "KepalaSekolah") prefix = "KPS";
+      if (roleBaru === "Kepala Sekolah" || roleBaru === "KepalaSekolah") prefix = "KPS";
       else if (roleBaru === "Guru") prefix = "GRU";
       else if (roleBaru === "Orang Tua" || roleBaru === "OrangTua") prefix = "ORT";
       idTarget = prefix + Math.floor(1000 + Math.random() * 9000);
@@ -1303,7 +1296,7 @@ function hapusUser(requestData) {
     }
 
     var headers = d[0].map(function(h) { return h.toString().toLowerCase().trim(); });
-    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
+    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
     var idxEmail = headers.findIndex(function(h) { return h.indexOf("email") !== -1 || h.indexOf("username") !== -1; });
 
     var targetId = requestData.id ? requestData.id.toString().trim() : "";
@@ -1346,15 +1339,15 @@ function getFaceProfiles() {
 
     if (d.length > 1) {
       var headers = d[0].map(function(h) { return h.toString().toLowerCase().trim(); });
-      var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
+    var idxId = headers.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1 || h.indexOf("nis") !== -1; });
       var idxNama = headers.findIndex(function(h) { return h.indexOf("nama") !== -1; });
       var idxRole = headers.findIndex(function(h) { return h.indexOf("role") !== -1 || h.indexOf("jabatan") !== -1; });
       var idxFoto = headers.findIndex(function(h) { return h.indexOf("foto") !== -1 || h.indexOf("photo") !== -1 || h.indexOf("gambar") !== -1; });
       var idxDescriptor = headers.findIndex(function(h) { return h.indexOf("descriptor") !== -1 || h.indexOf("face") !== -1; });
 
-      if (idxId === -1) idxId = 0;
       if (idxNama === -1) idxNama = 1;
-      if (idxRole === -1) idxRole = 4;
+    if (idxRole === -1) idxRole = 2;
+    if (idxId === -1) idxId = 3;
 
       for (var i = 1; i < d.length; i++) {
         var row = d[i];
@@ -1366,8 +1359,7 @@ function getFaceProfiles() {
 
         // Standardize role for frontend redirect
         var standardRole = roleVal;
-        if (roleVal.toLowerCase().indexOf("mudir") !== -1 || roleVal.toLowerCase().indexOf("pimpinan") !== -1) standardRole = "Mudir";
-        else if (roleVal.toLowerCase().indexOf("kepala") !== -1 || roleVal.toLowerCase().indexOf("kepsek") !== -1) standardRole = "KepalaSekolah";
+        if (roleVal.toLowerCase().indexOf("kepala") !== -1 || roleVal.toLowerCase().indexOf("kepsek") !== -1) standardRole = "KepalaSekolah";
         else if (roleVal.toLowerCase().indexOf("guru") !== -1) standardRole = "Guru";
         else if (roleVal.toLowerCase().indexOf("orang") !== -1 || roleVal.toLowerCase().indexOf("ortu") !== -1) standardRole = "OrangTua";
 
