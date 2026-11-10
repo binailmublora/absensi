@@ -684,6 +684,36 @@
     el.className = 'face-status ' + (type || '');
   }
 
+  // Fungsi Helper: Kompresi Gambar agar payload ringan & tidak memicu Failed to fetch
+  function kompresFoto(dataUrl, maxDim = 250, quality = 0.7) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if (w > h) {
+          if (w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          }
+        } else {
+          if (h > maxDim) {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
   // Handle Unggah Foto dari File
   async function handleFileUpload(e) {
     const file = e.target.files[0];
@@ -691,10 +721,10 @@
 
     const reader = new FileReader();
     reader.onload = async function(evt) {
-      const dataUrl = evt.target.result;
-      document.getElementById('photoPreview').src = dataUrl;
-      document.getElementById('userFotoBase64').value = dataUrl;
-      await prosesDeteksiWajah(dataUrl);
+      const compressedUrl = await kompresFoto(evt.target.result);
+      document.getElementById('photoPreview').src = compressedUrl;
+      document.getElementById('userFotoBase64').value = compressedUrl;
+      await prosesDeteksiWajah(compressedUrl);
     };
     reader.readAsDataURL(file);
   }
@@ -744,11 +774,12 @@
     canvas.height = 240;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, 320, 240);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    const rawDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    hentikanKamera();
 
+    const dataUrl = await kompresFoto(rawDataUrl);
     document.getElementById('photoPreview').src = dataUrl;
     document.getElementById('userFotoBase64').value = dataUrl;
-    hentikanKamera();
 
     await prosesDeteksiWajah(dataUrl);
   }
@@ -931,11 +962,12 @@
     canvas.height = 240;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, 320, 240);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    const rawDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    hentikanQuickKamera();
 
+    const dataUrl = await kompresFoto(rawDataUrl);
     document.getElementById('quickPhotoPreview').src = dataUrl;
     document.getElementById('quickUserFotoBase64').value = dataUrl;
-    hentikanQuickKamera();
 
     await prosesDeteksiQuickWajah(dataUrl);
   }
@@ -946,10 +978,10 @@
 
     const reader = new FileReader();
     reader.onload = async function(evt) {
-      const dataUrl = evt.target.result;
-      document.getElementById('quickPhotoPreview').src = dataUrl;
-      document.getElementById('quickUserFotoBase64').value = dataUrl;
-      await prosesDeteksiQuickWajah(dataUrl);
+      const compressedUrl = await kompresFoto(evt.target.result);
+      document.getElementById('quickPhotoPreview').src = compressedUrl;
+      document.getElementById('quickUserFotoBase64').value = compressedUrl;
+      await prosesDeteksiQuickWajah(compressedUrl);
     };
     reader.readAsDataURL(file);
   }
