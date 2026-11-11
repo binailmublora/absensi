@@ -1042,12 +1042,35 @@ function scanAbsen(requestData) {
       var idxKetAG = hAG.findIndex(function(h) { return h.indexOf("keterangan") !== -1; });
 
       var rowGFound = -1;
+      var rowGKeterangan = "";
       for (var r = 1; r < dAG.length; r++) {
         var rTgl = formatTanggalYYYYMMDD(dAG[r][idxTglAG]);
         var rId = dAG[r][idxIdAG] ? dAG[r][idxIdAG].toString().trim() : "";
-        if (rTgl === tglHariIni && (rId === personId || rId.toLowerCase() === personId.toLowerCase())) {
+        var rNama = dAG[r][2] ? dAG[r][2].toString().trim() : "";
+        if (rTgl === tglHariIni && (rId === personId || rId.toLowerCase() === personId.toLowerCase() || (personNama && rNama && personNama.toLowerCase() === rNama.toLowerCase()))) {
           rowGFound = r + 1;
+          rowGKeterangan = (idxKetAG !== -1 && dAG[r][idxKetAG]) ? dAG[r][idxKetAG].toString() : "";
           break;
+        }
+      }
+
+      // Validasi absensi berulang sesuai aturan kedatangan & kepulangan
+      if (rowGFound !== -1) {
+        var isAlreadyPulang = rowGKeterangan.toLowerCase().indexOf("pulang") !== -1 || rowGKeterangan.toLowerCase().indexOf("kepulangan") !== -1;
+        var isAlreadyDatang = rowGKeterangan.toLowerCase().indexOf("kedatangan") !== -1 || rowGKeterangan.toLowerCase().indexOf("masuk") !== -1 || rowGKeterangan !== "";
+
+        if (tipeAbsen === "Kedatangan") {
+          return {
+            ok: false,
+            sudah_absen: true,
+            msg: "Anda sudah melakukan absensi kedatangan, silakan absensi nanti setelah kepulangan."
+          };
+        } else if (tipeAbsen === "Kepulangan" && isAlreadyPulang) {
+          return {
+            ok: false,
+            sudah_absen: true,
+            msg: "Anda sudah melakukan absensi kepulangan, silakan absensi besok."
+          };
         }
       }
 
@@ -1055,10 +1078,9 @@ function scanAbsen(requestData) {
       var statusGuru = "Masuk";
 
       if (rowGFound !== -1) {
-        // Jika sudah ada absensi hari ini, update jam & keterangan
+        // Jika sudah ada absensi hari ini, update keterangan kepulangan
         if (tipeAbsen === "Kepulangan") {
-          var oldKet = (idxKetAG !== -1 && dAG[rowGFound - 1][idxKetAG]) ? dAG[rowGFound - 1][idxKetAG].toString() : "";
-          ketText = (oldKet && oldKet !== "-") ? oldKet + " | Pulang: " + jamSekarang : "Pulang: " + jamSekarang;
+          ketText = (rowGKeterangan && rowGKeterangan !== "-") ? rowGKeterangan + " | Pulang: " + jamSekarang : "Pulang: " + jamSekarang;
         }
         sheetAbsensiG.getRange(rowGFound, (idxStatusAG !== -1 ? idxStatusAG : 4) + 1).setValue(statusGuru);
         sheetAbsensiG.getRange(rowGFound, (idxJamAG !== -1 ? idxJamAG : 5) + 1).setValue(jamSekarang);
