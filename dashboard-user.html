@@ -561,27 +561,21 @@
   }
 
   // Load User Data
-  function loadUserData() {
+  async function loadUserData() {
     const tbody = document.getElementById('userTableBody');
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">Memuat data pengguna...</td></tr>';
 
-    fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'getUsers' })
-    })
-    .then(r => r.json())
-    .then(res => {
+    try {
+      const res = await kirimKeBackend({ action: 'getUsers' });
       if (res.ok && Array.isArray(res.data)) {
         listUserCache = res.data;
         renderUserTable(listUserCache);
       } else {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger);">${res.message || "Gagal memuat pengguna"}</td></tr>`;
       }
-    })
-    .catch(err => {
+    } catch(err) {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger);">Koneksi terganggu: ${err.message}</td></tr>`;
-    });
+    }
   }
 
   function renderUserTable(users) {
@@ -685,7 +679,7 @@
   }
 
   // Fungsi Helper: Kompresi Gambar agar payload ringan & tidak memicu Failed to fetch
-  function kompresFoto(dataUrl, maxDim = 250, quality = 0.7) {
+  function kompresFoto(dataUrl, maxDim = 200, quality = 0.6) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -712,6 +706,25 @@
       img.onerror = () => resolve(dataUrl);
       img.src = dataUrl;
     });
+  }
+
+  // Fungsi fetch pembungkus yang aman dan kompatibel dengan Google Apps Script
+  async function kirimKeBackend(payload) {
+    const rawBody = JSON.stringify(payload);
+    const response = await fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: rawBody
+    });
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch(e) {
+      if (text.includes('Page Not Found') || text.includes('drive.google.com') || response.status === 403 || response.status === 401) {
+        throw new Error('Izin Google Apps Script belum disetel "Anyone" (Siapa saja). Harap periksa setelan deployment.');
+      }
+      throw new Error('Respons backend tidak valid: ' + text.substring(0, 80));
+    }
   }
 
   // Handle Unggah Foto dari File
@@ -816,7 +829,7 @@
   }
 
   // Handle Simpan User (Tambah / Koreksi)
-  function handleSimpanUser(e) {
+  async function handleSimpanUser(e) {
     e.preventDefault();
     const btnSubmit = document.getElementById('btnSubmitUser');
     btnSubmit.disabled = true;
@@ -833,13 +846,8 @@
       faceDescriptor: document.getElementById('userFaceDescriptor').value
     };
 
-    fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    })
-    .then(r => r.json())
-    .then(res => {
+    try {
+      const res = await kirimKeBackend(payload);
       btnSubmit.disabled = false;
       btnSubmit.textContent = '💾 Simpan Data Pengguna';
 
@@ -850,37 +858,30 @@
       } else {
         alert('Gagal menyimpan: ' + (res.message || 'Terjadi kesalahan'));
       }
-    })
-    .catch(err => {
+    } catch(err) {
       btnSubmit.disabled = false;
       btnSubmit.textContent = '💾 Simpan Data Pengguna';
       alert('Kendala koneksi: ' + err.message);
-    });
+    }
   }
 
   // Konfirmasi & Eksekusi Hapus User
-  function konfirmasiHapusUser(id, nama) {
+  async function konfirmasiHapusUser(id, nama) {
     if (!confirm(`Apakah Anda yakin ingin menghapus pengguna "${nama}" (ID: ${id})?`)) {
       return;
     }
 
-    fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'hapusUser', id: id })
-    })
-    .then(r => r.json())
-    .then(res => {
+    try {
+      const res = await kirimKeBackend({ action: 'hapusUser', id: id });
       if (res.ok) {
         alert(res.message || 'Pengguna berhasil dihapus!');
         loadUserData();
       } else {
         alert('Gagal menghapus: ' + (res.message || 'Terjadi kesalahan'));
       }
-    })
-    .catch(err => {
+    } catch(err) {
       alert('Kendala koneksi: ' + err.message);
-    });
+    }
   }
 
   // ==========================================
@@ -1016,7 +1017,7 @@
     }
   }
 
-  function handleSimpanQuickFace(e) {
+  async function handleSimpanQuickFace(e) {
     e.preventDefault();
     const id = document.getElementById('quickUserId').value;
     const user = listUserCache.find(u => u.id === id);
@@ -1044,13 +1045,8 @@
       faceDescriptor: faceDescriptor
     };
 
-    fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    })
-    .then(r => r.json())
-    .then(res => {
+    try {
+      const res = await kirimKeBackend(payload);
       btnSubmit.disabled = false;
       btnSubmit.textContent = '💾 Simpan Rekaman Wajah';
 
@@ -1061,12 +1057,11 @@
       } else {
         alert('Gagal menyimpan rekaman wajah: ' + (res.message || 'Terjadi kesalahan'));
       }
-    })
-    .catch(err => {
+    } catch(err) {
       btnSubmit.disabled = false;
       btnSubmit.textContent = '💾 Simpan Rekaman Wajah';
       alert('Kendala koneksi: ' + err.message);
-    });
+    }
   }
 
   function logout() {
