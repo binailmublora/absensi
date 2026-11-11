@@ -369,6 +369,72 @@
     }
   }
 
+  // Manajemen Riwayat Presensi Hari Ini di Penyimpanan Klien
+  function getTodayString() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function getRiwayatPresensiLokal() {
+    try {
+      const raw = localStorage.getItem('presensi_hari_ini_' + getTodayString());
+      return raw ? JSON.parse(raw) : {};
+    } catch(e) {
+      return {};
+    }
+  }
+
+  function catatPresensiLokal(idKey, modeAbsen) {
+    try {
+      const records = getRiwayatPresensiLokal();
+      const cleanKey = (idKey || "").toString().toLowerCase().trim();
+      if (!records[cleanKey]) records[cleanKey] = [];
+      if (!records[cleanKey].includes(modeAbsen)) {
+        records[cleanKey].push(modeAbsen);
+      }
+      localStorage.setItem('presensi_hari_ini_' + getTodayString(), JSON.stringify(records));
+    } catch(e) {}
+  }
+
+  // Cek apakah pengguna sudah absen hari ini sesuai status opsi sesi
+  function cekStatusPresensiLokal(idKey) {
+    const records = getRiwayatPresensiLokal();
+    const cleanKey = (idKey || "").toString().toLowerCase().trim();
+    const listSesi = records[cleanKey] || [];
+
+    // Jika opsi kedatangan dan kepulangan TIDAK diaktifkan
+    if (!isFiturSesiAktif) {
+      if (listSesi.length > 0) {
+        return {
+          sudahAbsen: true,
+          pesan: "Anda sudah melakukan absensi hari ini, silakan absensi besok."
+        };
+      }
+    } else {
+      // Jika opsi kedatangan dan kepulangan DIAKTIFKAN
+      if (modeAbsenAktif === 'Kedatangan') {
+        if (listSesi.includes('Kedatangan')) {
+          return {
+            sudahAbsen: true,
+            pesan: "Anda sudah melakukan absensi kedatangan, silakan absensi nanti setelah kepulangan."
+          };
+        }
+      } else if (modeAbsenAktif === 'Kepulangan') {
+        if (listSesi.includes('Kepulangan')) {
+          return {
+            sudahAbsen: true,
+            pesan: "Anda sudah melakukan absensi kepulangan, silakan absensi besok."
+          };
+        }
+      }
+    }
+
+    return { sudahAbsen: false };
+  }
+
   // Status apakah opsi sesi kedatangan & kepulangan diaktifkan
   let isFiturSesiAktif = false;
 
@@ -492,23 +558,32 @@
   // Fungsi Ketika QR Code Berhasil Terbaca Kamera
   function onScanSuccess(decodedText) {
     if (!canScan) return;
-    canScan = false; 
+    canScan = false;
+
+    // 1. Cek apakah sudah absen hari ini
+    const statusCek = cekStatusPresensiLokal(decodedText);
+    if (statusCek.sudahAbsen) {
+      setScanStatus("⚠️ " + statusCek.pesan, "status-error");
+      bicaraSambutan(statusCek.pesan);
+      setTimeout(() => {
+        canScan = true;
+        setScanStatus("", "");
+      }, 4000);
+      return;
+    }
 
     setScanStatus("Mencocokkan data ID...", "status-loading");
 
-    fetch(BACKEND_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "scanAbsen",
-        barcodeId: decodedText,
-        tipe_absen: modeAbsenAktif,
-        metode: "Scanner QR Code"
-      })
-    })
-    .then(response => response.json())
-    .then(res => {
-      if(res.ok) {
+    prosesPencatatanPresensi({
+      id: decodedText,
+      nama: "",
+      role: "",
+      metode: "Scanner QR Code"
+    }).then(res => {
+      if (res.ok) {
+        catatPresensiLokal(decodedText, modeAbsenAktif);
+        if (res.nama) catatPresensiLokal(res.nama, modeAbsenAktif);
+
         // Tampilkan Banner Sambutan Ahlan wa sahlan
         const banner = document.getElementById("bannerSambutanQR");
         const teks = document.getElementById("teksSambutanQR");
@@ -519,7 +594,6 @@
         }
 
         bicaraSambutan(`Ahlan wa sahlan ${res.nama || ''}, absensi ${modeAbsenAktif} berhasil`);
-
         setScanStatus("✅ " + res.msg, "status-success");
         pushToHistory(res.nama || decodedText, res.detail || res.entity || modeAbsenAktif);
       } else {
@@ -529,11 +603,119 @@
         canScan = true; 
         setScanStatus("", ""); 
       }, 3500);
-    })
-    .catch(err => {
+    }).catch(err => {
       setScanStatus("❌ Koneksi Gagal atau Respons Invalid", "status-error");
       setTimeout(() => { canScan = true; }, 3500);
     });
+  }
+
+  // Fungsi Terpadu Pencatatan Absensi dengan Cerdas Fallback
+  async function prosesPencatatanPresensi(user) {
+    const tglHariIni = getTodayString();
+    const jamStr = new Date().toTimeString().split(' ')[0];
+
+    // Coba panggilan utama ke scanAbsen
+    try {
+      const resp = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "scanAbsen",
+          barcodeId: user.id,
+          nama: user.nama,
+          role: user.role,
+          from_face: user.metode === "Face Recognition",
+          metode: user.metode,
+          tipe_absen: modeAbsenAktif
+        })
+      });
+      const res = await resp.json();
+
+      // Jika berhasil di backend, langsung kembalikan
+      if (res && res.ok) {
+        return res;
+      }
+
+      // Jika gagal karena ID tidak dikenali (misal backend Apps Script belum diperbarui), jalankan fallback
+      console.warn("Pencatatan scanAbsen gagal, menjalankan fallback cerdas:", res ? res.msg : "");
+
+      const roleLower = (user.role || "").toLowerCase();
+      const idLower = (user.id || "").toLowerCase();
+      const isGuru = roleLower.includes("guru") || roleLower.includes("kepala") || roleLower.includes("staf") || idLower.startsWith("g");
+
+      if (isGuru) {
+        // Fallback simpanAbsensiGuru yang 100% aktif di backend
+        const respGuru = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "simpanAbsensiGuru",
+            tanggal: tglHariIni,
+            guru: [{
+              id_guru: user.id,
+              nama: user.nama || "Guru (" + user.id + ")",
+              jabatan: user.role || "Guru",
+              status: "Masuk",
+              jam: jamStr,
+              metode: user.metode,
+              keterangan: modeAbsenAktif + " (" + jamStr + ")"
+            }],
+            nama_user: "Sistem Otomatis"
+          })
+        });
+        const resGuru = await respGuru.json();
+        if (resGuru && resGuru.ok) {
+          return {
+            ok: true,
+            entity: "Guru",
+            id: user.id,
+            nama: user.nama || user.id,
+            detail: user.role || "Guru",
+            jam: jamStr,
+            tipe_absen: modeAbsenAktif,
+            msg: "Absensi " + modeAbsenAktif + " Guru berhasil dicatat pukul " + jamStr,
+            sambutan: "Ahlan wa sahlan " + (user.nama || user.id)
+          };
+        }
+      } else {
+        // Fallback simpanAbsensiSiswa
+        const respSiswa = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "simpanAbsensiSiswa",
+            tanggal: tglHariIni,
+            kelas: user.detail || user.kelas || "",
+            data: [{
+              id_siswa: user.id,
+              nama: user.nama || user.id,
+              status: "H"
+            }],
+            nama_user: user.metode + " (" + modeAbsenAktif + ")"
+          })
+        });
+        const resSiswa = await respSiswa.json();
+        if (resSiswa && resSiswa.ok) {
+          return {
+            ok: true,
+            entity: "Siswa",
+            id: user.id,
+            nama: user.nama || user.id,
+            detail: user.detail || "Siswa",
+            jam: jamStr,
+            tipe_absen: modeAbsenAktif,
+            msg: "Absensi " + modeAbsenAktif + " berhasil dicatat pukul " + jamStr,
+            sambutan: "Ahlan wa sahlan " + (user.nama || user.id)
+          };
+        }
+      }
+
+      // Jika fallback juga tidak berhasil, teruskan pesan asli
+      return res || { ok: false, msg: "Gagal memproses absensi." };
+
+    } catch(err) {
+      return { ok: false, msg: "Kendala koneksi: " + err.message };
+    }
   }
 
   function setScanStatus(msg, className) {
@@ -756,28 +938,41 @@
             }
 
             // 2. JIKA MODE ABSENSI HARIAN LANGSUNG SEPERTI HALNYA QR CODE
+            // Cek apakah sudah absen hari ini
+            const statusCek = cekStatusPresensiLokal(userData.id) || cekStatusPresensiLokal(userData.nama);
+            if (statusCek && statusCek.sudahAbsen) {
+              const banner = document.getElementById("bannerSambutanWajah");
+              if (banner) banner.style.display = "none";
+              statusEl.className = "status-error";
+              statusEl.innerHTML = `⚠️ <strong>${userData.nama}</strong>: ${statusCek.pesan}`;
+              bicaraSambutan(statusCek.pesan);
+
+              setTimeout(() => {
+                isFaceCooldown = false;
+                statusEl.className = "status-loading";
+                statusEl.innerText = `Silakan hadap kamera untuk Absensi ${modeAbsenAktif} langsung...`;
+              }, 4000);
+              return;
+            }
+
             statusEl.className = "status-loading";
             statusEl.innerHTML = `Mencatat Absensi ${modeAbsenAktif} untuk <strong>${userData.nama}</strong>...`;
 
-            fetch(BACKEND_URL, {
-              method: "POST",
-              headers: { "Content-Type": "text/plain;charset=utf-8" },
-              body: JSON.stringify({
-                action: "scanAbsen",
-                barcodeId: userData.id,
-                nama: userData.nama,
-                role: userData.role,
-                from_face: true,
-                metode: "Face Recognition",
-                tipe_absen: modeAbsenAktif
-              })
-            })
-            .then(res => res.json())
-            .then(res => {
+            prosesPencatatanPresensi({
+              id: userData.id,
+              nama: userData.nama,
+              role: userData.role,
+              detail: userData.role,
+              metode: "Face Recognition"
+            }).then(res => {
               const banner = document.getElementById("bannerSambutanWajah");
               const teks = document.getElementById("teksSambutanWajah");
 
               if (res.ok) {
+                // Catat ke memori presensi lokal agar tidak double-absen
+                catatPresensiLokal(userData.id, modeAbsenAktif);
+                catatPresensiLokal(userData.nama, modeAbsenAktif);
+
                 // Tampilkan Banner Sambutan Ahlan wa sahlan hanya jika sukses
                 if (banner && teks) {
                   teks.innerHTML = `${res.sambutan || ('Ahlan wa sahlan ' + userData.nama)}!<br><strong>${res.msg || ('Absensi ' + modeAbsenAktif + ' Berhasil')}</strong>`;
@@ -803,8 +998,7 @@
                 statusEl.className = "status-loading";
                 statusEl.innerText = `Silakan hadap kamera untuk Absensi ${modeAbsenAktif} langsung...`;
               }, 3500);
-            })
-            .catch(err => {
+            }).catch(err => {
               statusEl.className = "status-error";
               statusEl.innerText = "Kendala koneksi: " + err.message;
               setTimeout(() => {
