@@ -850,10 +850,28 @@ function scanAbsen(requestData) {
       targetIdList.push(cleanId.replace(/[^0-9a-zA-Z]/g, '').toLowerCase());
     }
 
+    var reqNama = (requestData.nama || requestData.nama_user || "").toString().trim();
+    var reqRole = (requestData.role || "").toString().trim();
+
     var entityType = ""; // 'Siswa' atau 'Guru'
     var personId = "";
     var personNama = "";
     var personDetail = ""; // Kelas untuk siswa, Jabatan untuk guru
+
+    // Helper pencocokan ID fleksibel (memeriksa exact match, case-insensitive, strip spasi/simbol)
+    function matchesTarget(val) {
+      if (!val) return false;
+      var cleanVal = val.toString().trim().toLowerCase();
+      var alnumVal = cleanVal.replace(/[^0-9a-zA-Z]/g, '');
+      for (var t = 0; t < targetIdList.length; t++) {
+        var tid = targetIdList[t];
+        if (!tid) continue;
+        if (cleanVal === tid) return true;
+        var alnumTid = tid.replace(/[^0-9a-zA-Z]/g, '');
+        if (alnumVal && alnumTid && (alnumVal === alnumTid)) return true;
+      }
+      return false;
+    }
 
     // 1. Jika bukan prefix Guru, cari dahulu di master Siswa
     if (!isPrefixGuru) {
@@ -877,14 +895,14 @@ function scanAbsen(requestData) {
 
             for (var i = 1; i < d.length; i++) {
               var valId = d[i][idxId] ? d[i][idxId].toString().trim() : "";
-              var valIdLower = valId.toLowerCase();
-              var matchSiswa = targetIdList.indexOf(valIdLower) !== -1 ||
-                               (valIdLower && targetIdList.some(function(t) { return valIdLower === t || valIdLower.indexOf(t) !== -1 || t.indexOf(valIdLower) !== -1; }));
+              var valNama = d[i][idxNama] ? d[i][idxNama].toString().trim() : "";
+
+              var matchSiswa = matchesTarget(valId) || (reqNama && valNama && reqNama.toLowerCase() === valNama.toLowerCase());
 
               if (matchSiswa) {
                 entityType = "Siswa";
-                personId = valId;
-                personNama = d[i][idxNama] ? d[i][idxNama].toString().trim() : "";
+                personId = valId || rawBarcode;
+                personNama = valNama || reqNama;
                 personDetail = d[i][idxKelas] ? d[i][idxKelas].toString().trim() : "";
                 break;
               }
@@ -902,28 +920,31 @@ function scanAbsen(requestData) {
         var dG = shGuru.getDataRange().getValues();
         if (dG.length > 1) {
           var headersG = dG[0];
+          // Header kolom bisa berupa: No, ID_Guru, Nama, Jabatan atau sejenisnya
           var idxIdG = headersG.findIndex(function(h) {
             var str = h.toString().toLowerCase();
             return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1 || str.indexOf("guru") !== -1;
           });
           var idxNamaG = headersG.findIndex(function(h) { return h.toString().toLowerCase().indexOf("nama") !== -1; });
-          var idxJabatanG = headersG.findIndex(function(h) { return h.toString().toLowerCase().indexOf("jabatan") !== -1 || h.toString().toLowerCase().indexOf("peran") !== -1; });
+          var idxJabatanG = headersG.findIndex(function(h) { return h.toString().toLowerCase().indexOf("jabatan") !== -1 || h.toString().toLowerCase().indexOf("peran") !== -1 || h.toString().toLowerCase().indexOf("role") !== -1; });
 
-          if (idxIdG === -1) idxIdG = 1;
-          if (idxNamaG === -1) idxNamaG = 2;
-          if (idxJabatanG === -1) idxJabatanG = 3;
+          // Cek fallback index jika nama kolom tidak bernama baku
+          if (idxIdG === -1) idxIdG = (dG[0].length > 1 ? 1 : 0);
+          if (idxNamaG === -1) idxNamaG = (dG[0].length > 2 ? 2 : 1);
+          if (idxJabatanG === -1) idxJabatanG = (dG[0].length > 3 ? 3 : 2);
 
           for (var g = 1; g < dG.length; g++) {
             var valIdG = dG[g][idxIdG] ? dG[g][idxIdG].toString().trim() : "";
-            var valIdGLower = valIdG.toLowerCase();
-            var matchGuru = targetIdList.indexOf(valIdGLower) !== -1 ||
-                            (valIdGLower && targetIdList.some(function(t) { return valIdGLower === t || valIdGLower.indexOf(t) !== -1 || t.indexOf(valIdGLower) !== -1; }));
+            var valNamaG = idxNamaG !== -1 && dG[g][idxNamaG] ? dG[g][idxNamaG].toString().trim() : "";
+
+            var matchGuru = matchesTarget(valIdG) ||
+                            (reqNama && valNamaG && reqNama.toLowerCase() === valNamaG.toLowerCase());
 
             if (matchGuru) {
               entityType = "Guru";
-              personId = valIdG;
-              personNama = dG[g][idxNamaG] ? dG[g][idxNamaG].toString().trim() : "";
-              personDetail = dG[g][idxJabatanG] ? dG[g][idxJabatanG].toString().trim() : "Guru";
+              personId = valIdG || rawBarcode;
+              personNama = valNamaG || reqNama;
+              personDetail = (idxJabatanG !== -1 && dG[g][idxJabatanG]) ? dG[g][idxJabatanG].toString().trim() : "Guru";
               break;
             }
           }
@@ -931,33 +952,68 @@ function scanAbsen(requestData) {
       }
     }
 
-    // 3. Jika masih belum ditemukan, cari di tabel User (untuk akun guru/staf)
+    // 3. Jika masih belum ditemukan, cari di tabel User (untuk akun guru/staf/kepsek)
     if (!entityType) {
       var shU = getOrCreateUserSheet_();
       var dU = shU.getDataRange().getValues();
       if (dU.length > 1) {
         var headersU = dU[0].map(function(h) { return h.toString().toLowerCase().trim(); });
-        var idxIdU = headersU.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1; });
+        var idxIdU = headersU.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("id_user") !== -1; });
+        var idxEmailU = headersU.findIndex(function(h) { return h.indexOf("email") !== -1 || h.indexOf("username") !== -1; });
         var idxNamaU = headersU.findIndex(function(h) { return h.indexOf("nama") !== -1; });
-        var idxRoleU = headersU.findIndex(function(h) { return h.indexOf("role") !== -1; });
+        var idxRoleU = headersU.findIndex(function(h) { return h.indexOf("role") !== -1 || h.indexOf("jabatan") !== -1; });
 
         for (var u = 1; u < dU.length; u++) {
           var valIdU = idxIdU !== -1 && dU[u][idxIdU] ? dU[u][idxIdU].toString().trim() : "";
-          var valIdULower = valIdU.toLowerCase();
-          if (valIdULower && targetIdList.some(function(t) { return valIdULower === t || valIdULower.indexOf(t) !== -1 || t.indexOf(valIdULower) !== -1; })) {
+          var valEmailU = idxEmailU !== -1 && dU[u][idxEmailU] ? dU[u][idxEmailU].toString().trim() : "";
+          var valNamaU = idxNamaU !== -1 && dU[u][idxNamaU] ? dU[u][idxNamaU].toString().trim() : "";
+
+          var matchUser = matchesTarget(valIdU) || matchesTarget(valEmailU) ||
+                          (reqNama && valNamaU && reqNama.toLowerCase() === valNamaU.toLowerCase());
+
+          if (matchUser) {
             var roleU = idxRoleU !== -1 && dU[u][idxRoleU] ? dU[u][idxRoleU].toString().trim() : "Guru";
             if (roleU.toLowerCase().indexOf("santri") !== -1 || roleU.toLowerCase().indexOf("siswa") !== -1) {
               entityType = "Siswa";
             } else {
               entityType = "Guru";
             }
-            personId = valIdU;
-            personNama = idxNamaU !== -1 && dU[u][idxNamaU] ? dU[u][idxNamaU].toString().trim() : "";
+            personId = valIdU || rawBarcode;
+            personNama = valNamaU || reqNama;
             personDetail = roleU;
             break;
           }
         }
       }
+    }
+
+    // 4. Jika masih belum ditemukan tapi request memiliki nama dan role guru / kepsek / staf
+    if (!entityType && reqNama) {
+      if (reqRole && (reqRole.toLowerCase().indexOf("guru") !== -1 || reqRole.toLowerCase().indexOf("kepala") !== -1 || reqRole.toLowerCase().indexOf("kepsek") !== -1 || reqRole.toLowerCase().indexOf("admin") !== -1 || reqRole.toLowerCase().indexOf("staf") !== -1)) {
+        entityType = "Guru";
+        personId = rawBarcode;
+        personNama = reqNama;
+        personDetail = reqRole || "Guru";
+      } else if (reqRole && (reqRole.toLowerCase().indexOf("siswa") !== -1 || reqRole.toLowerCase().indexOf("santri") !== -1)) {
+        entityType = "Siswa";
+        personId = rawBarcode;
+        personNama = reqNama;
+        personDetail = "Siswa";
+      } else if (rawBarcode.toLowerCase().startsWith("g") || rawBarcode.toLowerCase().indexOf("guru") !== -1) {
+        // Contoh: ID 'g1', 'g2'
+        entityType = "Guru";
+        personId = rawBarcode;
+        personNama = reqNama || rawBarcode;
+        personDetail = "Guru";
+      }
+    }
+
+    // 5. Fallback terakhir jika ID diawali 'g' (misal g1, g2 pada sheet Guru)
+    if (!entityType && (rawBarcode.toLowerCase().startsWith("g") || /^guru/i.test(rawBarcode))) {
+      entityType = "Guru";
+      personId = rawBarcode;
+      personNama = reqNama || ("Guru (" + rawBarcode + ")");
+      personDetail = "Guru";
     }
 
     if (!entityType) {

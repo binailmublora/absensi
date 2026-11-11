@@ -226,13 +226,16 @@
 
   <!-- Wrapper Utama -->
   <div class="main-wrapper">
-    <!-- Pilihan Mode Kedatangan / Kepulangan Terpusat -->
-    <div style="padding: 12px 16px; background: #f0fdf4; border-bottom: 1px solid #dcfce7; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-      <div style="font-size: 12px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 5px;">
-        <span>⏰ Opsi Sesi:</span>
-        <span id="labelJamOperasional" style="font-size: 11px; font-weight: 500; color: #4b5563;">(Masuk 07:00 | Pulang 14:00)</span>
+    <!-- Bar Kontrol Opsi Sesi Kedatangan & Kepulangan -->
+    <div id="containerOpsiSesi" style="padding: 10px 16px; background: #f0fdf4; border-bottom: 1px solid #dcfce7; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--primary); cursor: pointer; margin: 0; user-select: none;">
+          <input type="checkbox" id="toggleAktifSesi" onchange="toggleFiturSesi(this.checked)" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+          <span>Aktifkan Absensi Kedatangan & Kepulangan</span>
+        </label>
+        <span id="labelJamOperasional" style="font-size: 11px; font-weight: 500; color: #4b5563; display: none;">(Masuk 07:00 | Pulang 14:00)</span>
       </div>
-      <div style="display: flex; gap: 4px; background: #e2e8f0; padding: 3px; border-radius: 8px;">
+      <div id="wrapperTombolSesi" style="display: none; gap: 4px; background: #e2e8f0; padding: 3px; border-radius: 8px;">
         <button type="button" id="btnModeKedatangan" onclick="setModeAbsen('Kedatangan')" style="border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; background: var(--primary); color: white; transition: all 0.2s;">
           ☀️ Kedatangan
         </button>
@@ -366,22 +369,49 @@
     }
   }
 
+  // Status apakah opsi sesi kedatangan & kepulangan diaktifkan
+  let isFiturSesiAktif = false;
+
+  // Toggle aktifkan/nonaktifkan opsi absensi kedatangan dan kepulangan
+  function toggleFiturSesi(aktif) {
+    isFiturSesiAktif = aktif;
+    localStorage.setItem('app_fitur_sesi_aktif', aktif ? 'true' : 'false');
+
+    const wrapperTombol = document.getElementById('wrapperTombolSesi');
+    const labelJam = document.getElementById('labelJamOperasional');
+    const chk = document.getElementById('toggleAktifSesi');
+    if (chk) chk.checked = aktif;
+
+    if (aktif) {
+      if (wrapperTombol) wrapperTombol.style.display = 'flex';
+      if (labelJam) labelJam.style.display = 'inline';
+      evaluasiJamOperasionalOtomatis();
+    } else {
+      if (wrapperTombol) wrapperTombol.style.display = 'none';
+      if (labelJam) labelJam.style.display = 'none';
+      // Default jika nonaktif adalah Kedatangan
+      modeAbsenAktif = 'Kedatangan';
+    }
+  }
+
   // Tentukan mode kedatangan atau kepulangan
   function setModeAbsen(mode) {
     modeAbsenAktif = mode;
     const btnMasuk = document.getElementById('btnModeKedatangan');
     const btnPulang = document.getElementById('btnModeKepulangan');
 
-    if (mode === 'Kedatangan') {
-      btnMasuk.style.background = 'var(--primary)';
-      btnMasuk.style.color = 'white';
-      btnPulang.style.background = 'transparent';
-      btnPulang.style.color = '#475569';
-    } else {
-      btnPulang.style.background = '#0284c7';
-      btnPulang.style.color = 'white';
-      btnMasuk.style.background = 'transparent';
-      btnMasuk.style.color = '#475569';
+    if (btnMasuk && btnPulang) {
+      if (mode === 'Kedatangan') {
+        btnMasuk.style.background = 'var(--primary)';
+        btnMasuk.style.color = 'white';
+        btnPulang.style.background = 'transparent';
+        btnPulang.style.color = '#475569';
+      } else {
+        btnPulang.style.background = '#0284c7';
+        btnPulang.style.color = 'white';
+        btnMasuk.style.background = 'transparent';
+        btnMasuk.style.color = '#475569';
+      }
     }
   }
 
@@ -389,7 +419,8 @@
   function evaluasiJamOperasionalOtomatis() {
     const jamMasukStr = localStorage.getItem('app_jam_masuk') || '07:00';
     const jamPulangStr = localStorage.getItem('app_jam_pulang') || '14:00';
-    document.getElementById('labelJamOperasional').textContent = `(Masuk ${jamMasukStr} | Pulang ${jamPulangStr})`;
+    const labelJam = document.getElementById('labelJamOperasional');
+    if (labelJam) labelJam.textContent = `(Masuk ${jamMasukStr} | Pulang ${jamPulangStr})`;
 
     const now = new Date();
     const curMinutes = now.getHours() * 60 + now.getMinutes();
@@ -734,6 +765,8 @@
               body: JSON.stringify({
                 action: "scanAbsen",
                 barcodeId: userData.id,
+                nama: userData.nama,
+                role: userData.role,
                 from_face: true,
                 metode: "Face Recognition",
                 tipe_absen: modeAbsenAktif
@@ -741,22 +774,24 @@
             })
             .then(res => res.json())
             .then(res => {
-              // Tampilkan Banner Sambutan Ahlan wa sahlan
               const banner = document.getElementById("bannerSambutanWajah");
               const teks = document.getElementById("teksSambutanWajah");
-              if (banner && teks) {
-                teks.innerHTML = `${res.sambutan || ('Ahlan wa sahlan ' + userData.nama)}!<br><strong>${res.msg || ('Absensi ' + modeAbsenAktif + ' Berhasil')}</strong>`;
-                banner.style.display = "block";
-              }
-
-              // Audio ucapan sambutan
-              bicaraSambutan(`Ahlan wa sahlan ${userData.nama}, absensi ${modeAbsenAktif} berhasil`);
 
               if (res.ok) {
+                // Tampilkan Banner Sambutan Ahlan wa sahlan hanya jika sukses
+                if (banner && teks) {
+                  teks.innerHTML = `${res.sambutan || ('Ahlan wa sahlan ' + userData.nama)}!<br><strong>${res.msg || ('Absensi ' + modeAbsenAktif + ' Berhasil')}</strong>`;
+                  banner.style.display = "block";
+                }
+
+                // Audio ucapan sambutan
+                bicaraSambutan(`Ahlan wa sahlan ${userData.nama}, absensi ${modeAbsenAktif} berhasil`);
+
                 statusEl.className = "status-success";
                 statusEl.innerHTML = `✅ <strong>${userData.nama}</strong> (${userData.role}) - Absensi ${modeAbsenAktif} Berhasil Dicatat!`;
                 pushToFaceHistory(userData.nama, `${modeAbsenAktif} • ${userData.role}`);
               } else {
+                if (banner) banner.style.display = "none";
                 statusEl.className = "status-error";
                 statusEl.innerHTML = `⚠️ ${res.msg || 'Gagal menyimpan absensi'}`;
               }
@@ -821,7 +856,8 @@
 
   window.onload = function() {
     muatBrandingSekolah();
-    evaluasiJamOperasionalOtomatis();
+    const fiturSesiSaved = localStorage.getItem('app_fitur_sesi_aktif') === 'true';
+    toggleFiturSesi(fiturSesiSaved);
     initFaceAPI();
     loadFaceProfiles();
     startFaceRecognition();
