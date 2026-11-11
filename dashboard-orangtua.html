@@ -153,9 +153,12 @@
     
     <!-- Topbar Header -->
     <div class="header">
-      <div>
-        <h1>Dashboard Orang Tua</h1>
-        <p>Ahlan wa sahlan, <strong id="namaOrtu">...</strong></p> 
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <img id="headerLogoSekolah" src="binailmu.png" alt="Logo Sekolah" style="width: 54px; height: 54px; border-radius: 50%; background: white; object-fit: contain; padding: 3px; border: 2px solid var(--accent);" onerror="this.src='binailmu.png'">
+        <div>
+          <h1 id="headerNamaSekolah">Dashboard Orang Tua</h1>
+          <p>Ahlan wa sahlan, <strong id="namaOrtu">...</strong></p>
+        </div>
       </div>
       <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
     </div>
@@ -339,7 +342,20 @@
       window.location.href = 'index.html';
     }
 
+    function muatBrandingSekolah() {
+      const savedName = localStorage.getItem('app_school_name');
+      const savedLogo = localStorage.getItem('app_school_logo');
+      if (savedName) {
+        document.getElementById('headerNamaSekolah').textContent = savedName + ' - Wali Murid';
+        document.title = savedName + ' - Dashboard Orang Tua';
+      }
+      if (savedLogo) {
+        document.getElementById('headerLogoSekolah').src = savedLogo;
+      }
+    }
+
     window.onload = function() {
+      muatBrandingSekolah();
       setPeriodeDefault();
       muatAbsensiOrtu();
     };

@@ -150,6 +150,15 @@ function processRequest(requestData) {
       return getFaceProfiles();
     }
 
+    // 17. Pengaturan White-label & Jam Kedatangan/Kepulangan
+    if (action === "getPengaturan" || action === "getSetting") {
+      return getPengaturan();
+    }
+
+    if (action === "simpanPengaturan" || action === "saveSetting") {
+      return simpanPengaturan(requestData);
+    }
+
     return { ok: false, message: "Aksi tidak dikenal: " + action };
   } catch(err) {
     return { ok: false, message: err.toString() };
@@ -530,56 +539,122 @@ function getAbsensiOrtu(requestData) {
   try {
     var ss = SS_();
     var namaOrtu = requestData.nama_ortu ? requestData.nama_ortu.toString().trim().toLowerCase() : "";
+    var idTerkaitInput = requestData.id_terkait ? requestData.id_terkait.toString().trim() : "";
 
-    if (!namaOrtu) {
+    if (!namaOrtu && !idTerkaitInput) {
       return { ok: false, message: "Nama Orang Tua tidak valid." };
     }
 
-    var idSiswa = "";
+    var idSiswa = idTerkaitInput;
     var namaSiswa = "";
     var kelasSiswa = "";
 
-    var sheetNames = ["Siswa", "Data_Siswa", "Master_Siswa"];
-    for (var s = 0; s < sheetNames.length; s++) {
-      var sh = ss.getSheetByName(sheetNames[s]);
-      if (sh) {
-        var d = sh.getDataRange().getValues();
-        if (d.length > 1) {
-          var headers = d[0];
-          var idxId = headers.findIndex(function(h) {
-            var str = h.toString().toLowerCase();
-            return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1;
-          });
-          var idxNama = headers.findIndex(function(h) {
-            return h.toString().toLowerCase().indexOf("nama") !== -1;
-          });
-          var idxKelas = headers.findIndex(function(h) {
-            return h.toString().toLowerCase().indexOf("kelas") !== -1;
-          });
-          var idxOrtu = headers.findIndex(function(h) {
-            var str = h.toString().toLowerCase();
-            return str.indexOf("orang tua") !== -1 || str.indexOf("ortu") !== -1 || str.indexOf("wali") !== -1 || str.indexOf("ayah") !== -1 || str.indexOf("ibu") !== -1;
-          });
+    // 1. Cek di tabel User apakah ada relasi ID_Terkait untuk user orang tua ini
+    if (!idSiswa) {
+      var userSheetNames = ["User", "Users", "Data_User", "Akun", "PIN"];
+      for (var u = 0; u < userSheetNames.length; u++) {
+        var userSh = ss.getSheetByName(userSheetNames[u]);
+        if (userSh) {
+          var uData = userSh.getDataRange().getValues();
+          if (uData.length > 1) {
+            var uHeaders = uData[0].map(function(h) { return h.toString().toLowerCase().trim(); });
+            var uIdxNama = uHeaders.findIndex(function(h) { return h.indexOf("nama") !== -1; });
+            var uIdxEmail = uHeaders.findIndex(function(h) { return h.indexOf("email") !== -1 || h.indexOf("username") !== -1; });
+            var uIdxIdTerkait = uHeaders.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1 || h.indexOf("nis") !== -1; });
 
-          if (idxId === -1) idxId = 1;
-          if (idxNama === -1) idxNama = 2;
-          if (idxKelas === -1) idxKelas = 3;
+            for (var ui = 1; ui < uData.length; ui++) {
+              var uNamaVal = uIdxNama !== -1 && uData[ui][uIdxNama] ? uData[ui][uIdxNama].toString().trim().toLowerCase() : "";
+              var uEmailVal = uIdxEmail !== -1 && uData[ui][uIdxEmail] ? uData[ui][uIdxEmail].toString().trim().toLowerCase() : "";
+              var uTerkaitVal = uIdxIdTerkait !== -1 && uData[ui][uIdxIdTerkait] ? uData[ui][uIdxIdTerkait].toString().trim() : "";
 
-          for (var i = 1; i < d.length; i++) {
-            var ortuVal = idxOrtu !== -1 && d[i][idxOrtu] ? d[i][idxOrtu].toString().trim().toLowerCase() : "";
-            if (ortuVal === namaOrtu || (ortuVal && ortuVal.indexOf(namaOrtu) !== -1)) {
-              idSiswa = d[i][idxId] ? d[i][idxId].toString().trim() : "";
-              namaSiswa = d[i][idxNama] ? d[i][idxNama].toString().trim() : "";
-              kelasSiswa = d[i][idxKelas] ? d[i][idxKelas].toString().trim() : "";
-              break;
+              if (uTerkaitVal && (uNamaVal === namaOrtu || (namaOrtu && uNamaVal.indexOf(namaOrtu) !== -1) || uEmailVal === namaOrtu)) {
+                // Bersihkan prefix jika ada seperti SIS-
+                idSiswa = uTerkaitVal.replace(/^SIS-/i, '').split('-')[0].trim();
+                break;
+              }
             }
           }
         }
+        if (idSiswa) break;
       }
-      if (idSiswa) break;
     }
 
-    // Fallback jika tidak terelasi di spreadsheet master, gunakan nama_ortu sebagai filter parsial nama siswa
+    var sheetNames = ["Siswa", "Data_Siswa", "Master_Siswa"];
+
+    // 2. Jika ID Siswa sudah ditemukan dari relasi ID_Terkait, cari data lengkap siswa (Nama & Kelas)
+    if (idSiswa) {
+      var idTargetClean = idSiswa.toLowerCase();
+      for (var s = 0; s < sheetNames.length; s++) {
+        var sh = ss.getSheetByName(sheetNames[s]);
+        if (sh) {
+          var d = sh.getDataRange().getValues();
+          if (d.length > 1) {
+            var headers = d[0];
+            var idxId = headers.findIndex(function(h) {
+              var str = h.toString().toLowerCase();
+              return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1;
+            });
+            var idxNama = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("nama") !== -1; });
+            var idxKelas = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("kelas") !== -1; });
+
+            if (idxId === -1) idxId = 1;
+            if (idxNama === -1) idxNama = 2;
+            if (idxKelas === -1) idxKelas = 3;
+
+            for (var i = 1; i < d.length; i++) {
+              var curId = d[i][idxId] ? d[i][idxId].toString().trim().toLowerCase() : "";
+              if (curId === idTargetClean || curId.indexOf(idTargetClean) !== -1 || idTargetClean.indexOf(curId) !== -1) {
+                idSiswa = d[i][idxId] ? d[i][idxId].toString().trim() : idSiswa;
+                namaSiswa = d[i][idxNama] ? d[i][idxNama].toString().trim() : "";
+                kelasSiswa = d[i][idxKelas] ? d[i][idxKelas].toString().trim() : "";
+                break;
+              }
+            }
+          }
+        }
+        if (namaSiswa) break;
+      }
+    }
+
+    // 3. Jika belum ditemukan, periksa kolom Orang Tua / Wali di sheet siswa
+    if (!idSiswa) {
+      for (var s = 0; s < sheetNames.length; s++) {
+        var sh = ss.getSheetByName(sheetNames[s]);
+        if (sh) {
+          var d = sh.getDataRange().getValues();
+          if (d.length > 1) {
+            var headers = d[0];
+            var idxId = headers.findIndex(function(h) {
+              var str = h.toString().toLowerCase();
+              return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1;
+            });
+            var idxNama = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("nama") !== -1; });
+            var idxKelas = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("kelas") !== -1; });
+            var idxOrtu = headers.findIndex(function(h) {
+              var str = h.toString().toLowerCase();
+              return str.indexOf("orang tua") !== -1 || str.indexOf("ortu") !== -1 || str.indexOf("wali") !== -1 || str.indexOf("ayah") !== -1 || str.indexOf("ibu") !== -1;
+            });
+
+            if (idxId === -1) idxId = 1;
+            if (idxNama === -1) idxNama = 2;
+            if (idxKelas === -1) idxKelas = 3;
+
+            for (var i = 1; i < d.length; i++) {
+              var ortuVal = idxOrtu !== -1 && d[i][idxOrtu] ? d[i][idxOrtu].toString().trim().toLowerCase() : "";
+              if (ortuVal && (ortuVal === namaOrtu || ortuVal.indexOf(namaOrtu) !== -1 || namaOrtu.indexOf(ortuVal) !== -1)) {
+                idSiswa = d[i][idxId] ? d[i][idxId].toString().trim() : "";
+                namaSiswa = d[i][idxNama] ? d[i][idxNama].toString().trim() : "";
+                kelasSiswa = d[i][idxKelas] ? d[i][idxKelas].toString().trim() : "";
+                break;
+              }
+            }
+          }
+        }
+        if (idSiswa) break;
+      }
+    }
+
+    // 4. Fallback jika nama ortu adalah bagian dari nama siswa atau filter fuzzy
     if (!idSiswa) {
       for (var s = 0; s < sheetNames.length; s++) {
         var sh = ss.getSheetByName(sheetNames[s]);
@@ -588,7 +663,7 @@ function getAbsensiOrtu(requestData) {
           if (d.length > 1) {
             for (var i = 1; i < d.length; i++) {
               var sNama = d[i][2] ? d[i][2].toString().trim() : "";
-              if (sNama && sNama.toLowerCase().indexOf(namaOrtu) !== -1) {
+              if (sNama && (sNama.toLowerCase().indexOf(namaOrtu) !== -1 || namaOrtu.indexOf(sNama.toLowerCase()) !== -1)) {
                 idSiswa = d[i][1] ? d[i][1].toString().trim() : "";
                 namaSiswa = sNama;
                 kelasSiswa = d[i][3] ? d[i][3].toString().trim() : "";
@@ -602,7 +677,7 @@ function getAbsensiOrtu(requestData) {
     }
 
     if (!idSiswa) {
-      return { ok: false, message: "Koneksi data ananda untuk wali murid '" + requestData.nama_ortu + "' belum dikonfigurasi di spreadsheet." };
+      return { ok: false, message: "Koneksi data ananda untuk wali murid '" + (requestData.nama_ortu || requestData.id_terkait) + "' belum dikonfigurasi di spreadsheet." };
     }
 
     var rekapReq = {
@@ -738,77 +813,249 @@ function loginPortal(requestData) {
 }
 
 // =========================================================================
-// 7. INPUT ABSENSI QR SCANNER
+// 7. INPUT ABSENSI QR SCANNER & FACE RECOGNITION (LANGSUNG DENGAN SAMBUTAN)
 // =========================================================================
 function scanAbsen(requestData) {
   try {
     var ss = SS_();
-    var barcodeId = requestData.barcodeId ? requestData.barcodeId.toString().trim() : "";
-    if (!barcodeId) {
-      return { ok: false, msg: "QR Code kosong!" };
+    var rawBarcode = (requestData.barcodeId || requestData.id || requestData.id_user || "").toString().trim();
+    if (!rawBarcode) {
+      return { ok: false, msg: "Data ID atau QR Code kosong!" };
     }
 
-    var namaSiswa = "";
-    var kelasSiswa = "";
-    var found = false;
+    // Tipe absensi: Kedatangan (Masuk) atau Kepulangan (Pulang)
+    var tipeAbsen = requestData.tipe_absen || requestData.jenis || "Kedatangan";
+    // Metode input: Face Recognition atau Scanner QR Code Otomatis
+    var metodeInput = requestData.metode || (requestData.action === "scanAbsen" && requestData.from_face ? "Face Recognition" : "Scanner QR Code");
 
-    var sheetNames = ["Siswa", "Data_Siswa", "Master_Siswa"];
-    for (var s = 0; s < sheetNames.length; s++) {
-      var sh = ss.getSheetByName(sheetNames[s]);
-      if (sh) {
-        var d = sh.getDataRange().getValues();
-        if (d.length > 1) {
-          var headers = d[0];
-          var idxId = headers.findIndex(function(h) {
+    // Ekstraksi ID murni jika kartu memiliki prefix (misal 'GRU-12345-hash', 'SIS-001', 'GRU001')
+    var cleanId = rawBarcode;
+    var isPrefixGuru = false;
+    var isPrefixSiswa = false;
+
+    if (/^GRU[-_]/i.test(rawBarcode)) {
+      isPrefixGuru = true;
+      var parts = rawBarcode.split(/[-_]/);
+      cleanId = parts.length > 1 ? parts[1] : rawBarcode;
+    } else if (/^SIS[-_]/i.test(rawBarcode)) {
+      isPrefixSiswa = true;
+      var parts = rawBarcode.split(/[-_]/);
+      cleanId = parts.length > 1 ? parts[1] : rawBarcode;
+    } else if (rawBarcode.indexOf("-") !== -1) {
+      cleanId = rawBarcode.split("-")[0].trim();
+    }
+
+    var targetIdList = [rawBarcode.toLowerCase(), cleanId.toLowerCase()];
+    if (cleanId.replace(/[^0-9a-zA-Z]/g, '') !== cleanId) {
+      targetIdList.push(cleanId.replace(/[^0-9a-zA-Z]/g, '').toLowerCase());
+    }
+
+    var entityType = ""; // 'Siswa' atau 'Guru'
+    var personId = "";
+    var personNama = "";
+    var personDetail = ""; // Kelas untuk siswa, Jabatan untuk guru
+
+    // 1. Jika bukan prefix Guru, cari dahulu di master Siswa
+    if (!isPrefixGuru) {
+      var sheetNamesSiswa = ["Siswa", "Data_Siswa", "Master_Siswa"];
+      for (var s = 0; s < sheetNamesSiswa.length; s++) {
+        var sh = ss.getSheetByName(sheetNamesSiswa[s]);
+        if (sh) {
+          var d = sh.getDataRange().getValues();
+          if (d.length > 1) {
+            var headers = d[0];
+            var idxId = headers.findIndex(function(h) {
+              var str = h.toString().toLowerCase();
+              return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1;
+            });
+            var idxNama = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("nama") !== -1; });
+            var idxKelas = headers.findIndex(function(h) { return h.toString().toLowerCase().indexOf("kelas") !== -1; });
+
+            if (idxId === -1) idxId = 1;
+            if (idxNama === -1) idxNama = 2;
+            if (idxKelas === -1) idxKelas = 3;
+
+            for (var i = 1; i < d.length; i++) {
+              var valId = d[i][idxId] ? d[i][idxId].toString().trim() : "";
+              var valIdLower = valId.toLowerCase();
+              var matchSiswa = targetIdList.indexOf(valIdLower) !== -1 ||
+                               (valIdLower && targetIdList.some(function(t) { return valIdLower === t || valIdLower.indexOf(t) !== -1 || t.indexOf(valIdLower) !== -1; }));
+
+              if (matchSiswa) {
+                entityType = "Siswa";
+                personId = valId;
+                personNama = d[i][idxNama] ? d[i][idxNama].toString().trim() : "";
+                personDetail = d[i][idxKelas] ? d[i][idxKelas].toString().trim() : "";
+                break;
+              }
+            }
+          }
+        }
+        if (entityType) break;
+      }
+    }
+
+    // 2. Jika belum ditemukan atau ber-prefix Guru, cari di master Guru
+    if (!entityType) {
+      var shGuru = ss.getSheetByName("Guru");
+      if (shGuru) {
+        var dG = shGuru.getDataRange().getValues();
+        if (dG.length > 1) {
+          var headersG = dG[0];
+          var idxIdG = headersG.findIndex(function(h) {
             var str = h.toString().toLowerCase();
-            return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1;
+            return str.indexOf("id") !== -1 || str.indexOf("nis") !== -1 || str.indexOf("guru") !== -1;
           });
-          var idxNama = headers.findIndex(function(h) {
-            return h.toString().toLowerCase().indexOf("nama") !== -1;
-          });
-          var idxKelas = headers.findIndex(function(h) {
-            return h.toString().toLowerCase().indexOf("kelas") !== -1;
-          });
+          var idxNamaG = headersG.findIndex(function(h) { return h.toString().toLowerCase().indexOf("nama") !== -1; });
+          var idxJabatanG = headersG.findIndex(function(h) { return h.toString().toLowerCase().indexOf("jabatan") !== -1 || h.toString().toLowerCase().indexOf("peran") !== -1; });
 
-          if (idxId === -1) idxId = 1;
-          if (idxNama === -1) idxNama = 2;
-          if (idxKelas === -1) idxKelas = 3;
+          if (idxIdG === -1) idxIdG = 1;
+          if (idxNamaG === -1) idxNamaG = 2;
+          if (idxJabatanG === -1) idxJabatanG = 3;
 
-          for (var i = 1; i < d.length; i++) {
-            var valId = d[i][idxId] ? d[i][idxId].toString().trim() : "";
-            if (valId === barcodeId) {
-              namaSiswa = d[i][idxNama] ? d[i][idxNama].toString().trim() : "";
-              kelasSiswa = d[i][idxKelas] ? d[i][idxKelas].toString().trim() : "";
-              found = true;
+          for (var g = 1; g < dG.length; g++) {
+            var valIdG = dG[g][idxIdG] ? dG[g][idxIdG].toString().trim() : "";
+            var valIdGLower = valIdG.toLowerCase();
+            var matchGuru = targetIdList.indexOf(valIdGLower) !== -1 ||
+                            (valIdGLower && targetIdList.some(function(t) { return valIdGLower === t || valIdGLower.indexOf(t) !== -1 || t.indexOf(valIdGLower) !== -1; }));
+
+            if (matchGuru) {
+              entityType = "Guru";
+              personId = valIdG;
+              personNama = dG[g][idxNamaG] ? dG[g][idxNamaG].toString().trim() : "";
+              personDetail = dG[g][idxJabatanG] ? dG[g][idxJabatanG].toString().trim() : "Guru";
               break;
             }
           }
         }
       }
-      if (found) break;
     }
 
-    if (!found) {
-      return { ok: false, msg: "ID Kartu '" + barcodeId + "' tidak dikenali di master!" };
+    // 3. Jika masih belum ditemukan, cari di tabel User (untuk akun guru/staf)
+    if (!entityType) {
+      var shU = getOrCreateUserSheet_();
+      var dU = shU.getDataRange().getValues();
+      if (dU.length > 1) {
+        var headersU = dU[0].map(function(h) { return h.toString().toLowerCase().trim(); });
+        var idxIdU = headersU.findIndex(function(h) { return h === "id" || h.indexOf("id_terkait") !== -1; });
+        var idxNamaU = headersU.findIndex(function(h) { return h.indexOf("nama") !== -1; });
+        var idxRoleU = headersU.findIndex(function(h) { return h.indexOf("role") !== -1; });
+
+        for (var u = 1; u < dU.length; u++) {
+          var valIdU = idxIdU !== -1 && dU[u][idxIdU] ? dU[u][idxIdU].toString().trim() : "";
+          var valIdULower = valIdU.toLowerCase();
+          if (valIdULower && targetIdList.some(function(t) { return valIdULower === t || valIdULower.indexOf(t) !== -1 || t.indexOf(valIdULower) !== -1; })) {
+            var roleU = idxRoleU !== -1 && dU[u][idxRoleU] ? dU[u][idxRoleU].toString().trim() : "Guru";
+            if (roleU.toLowerCase().indexOf("santri") !== -1 || roleU.toLowerCase().indexOf("siswa") !== -1) {
+              entityType = "Siswa";
+            } else {
+              entityType = "Guru";
+            }
+            personId = valIdU;
+            personNama = idxNamaU !== -1 && dU[u][idxNamaU] ? dU[u][idxNamaU].toString().trim() : "";
+            personDetail = roleU;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!entityType) {
+      return { ok: false, msg: "ID Kartu '" + rawBarcode + "' tidak dikenali di data master siswa maupun guru!" };
     }
 
     var tglHariIni = formatTanggalYYYYMMDD(new Date());
-    var saveReq = {
-      tanggal: tglHariIni,
-      kelas: kelasSiswa,
-      data: [{ id_siswa: barcodeId, status: "H", nama: namaSiswa }],
-      nama_user: "Scanner QR Code Otomatis"
-    };
+    var jamSekarang = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm:ss");
 
-    var saveResult = simpanAbsensiSiswa(saveReq);
-    if (saveResult.ok) {
-      return { ok: true, msg: "Absen OK: " + namaSiswa + " [" + kelasSiswa + "]" };
+    // Catat ke sheet yang sesuai
+    if (entityType === "Guru") {
+      var sheetAbsensiG = ss.getSheetByName("Absensi_Guru");
+      if (!sheetAbsensiG) {
+        sheetAbsensiG = ss.insertSheet("Absensi_Guru");
+        sheetAbsensiG.appendRow(["Tanggal", "ID_Guru", "Nama", "Jabatan", "Status", "Jam", "Metode", "Diinput_Oleh", "Keterangan"]);
+      }
+
+      var dAG = sheetAbsensiG.getDataRange().getValues();
+      var hAG = dAG[0].map(function(h) { return h.toString().toLowerCase().trim(); });
+      var idxTglAG = hAG.findIndex(function(h) { return h.indexOf("tanggal") !== -1; });
+      var idxIdAG = hAG.findIndex(function(h) { return h.indexOf("id") !== -1 || h.indexOf("guru") !== -1; });
+      var idxStatusAG = hAG.findIndex(function(h) { return h.indexOf("status") !== -1; });
+      var idxJamAG = hAG.findIndex(function(h) { return h.indexOf("jam") !== -1; });
+      var idxMetodeAG = hAG.findIndex(function(h) { return h.indexOf("metode") !== -1; });
+      var idxDiinputAG = hAG.findIndex(function(h) { return h.indexOf("diinput") !== -1; });
+      var idxKetAG = hAG.findIndex(function(h) { return h.indexOf("keterangan") !== -1; });
+
+      var rowGFound = -1;
+      for (var r = 1; r < dAG.length; r++) {
+        var rTgl = formatTanggalYYYYMMDD(dAG[r][idxTglAG]);
+        var rId = dAG[r][idxIdAG] ? dAG[r][idxIdAG].toString().trim() : "";
+        if (rTgl === tglHariIni && (rId === personId || rId.toLowerCase() === personId.toLowerCase())) {
+          rowGFound = r + 1;
+          break;
+        }
+      }
+
+      var ketText = tipeAbsen === "Kepulangan" ? "Kepulangan (" + jamSekarang + ")" : "Kedatangan (" + jamSekarang + ")";
+      var statusGuru = "Masuk";
+
+      if (rowGFound !== -1) {
+        // Jika sudah ada absensi hari ini, update jam & keterangan
+        if (tipeAbsen === "Kepulangan") {
+          var oldKet = (idxKetAG !== -1 && dAG[rowGFound - 1][idxKetAG]) ? dAG[rowGFound - 1][idxKetAG].toString() : "";
+          ketText = (oldKet && oldKet !== "-") ? oldKet + " | Pulang: " + jamSekarang : "Pulang: " + jamSekarang;
+        }
+        sheetAbsensiG.getRange(rowGFound, (idxStatusAG !== -1 ? idxStatusAG : 4) + 1).setValue(statusGuru);
+        sheetAbsensiG.getRange(rowGFound, (idxJamAG !== -1 ? idxJamAG : 5) + 1).setValue(jamSekarang);
+        if (idxMetodeAG !== -1) sheetAbsensiG.getRange(rowGFound, idxMetodeAG + 1).setValue(metodeInput);
+        if (idxKetAG !== -1) sheetAbsensiG.getRange(rowGFound, idxKetAG + 1).setValue(ketText);
+      } else {
+        sheetAbsensiG.appendRow([tglHariIni, personId, personNama, personDetail, statusGuru, jamSekarang, metodeInput, "Sistem Otomatis", ketText]);
+      }
+
+      var pesanGuru = "Ahlan wa sahlan " + personNama + "! Absensi " + tipeAbsen + " Guru berhasil dicatat pukul " + jamSekarang;
+      return {
+        ok: true,
+        entity: "Guru",
+        id: personId,
+        nama: personNama,
+        detail: personDetail,
+        jam: jamSekarang,
+        tipe_absen: tipeAbsen,
+        msg: pesanGuru,
+        sambutan: "Ahlan wa sahlan " + personNama
+      };
+
     } else {
-      return { ok: false, msg: "Gagal mencatat: " + saveResult.message };
+      // Absensi Siswa
+      var saveReq = {
+        tanggal: tglHariIni,
+        kelas: personDetail,
+        data: [{ id_siswa: personId, status: "H", nama: personNama }],
+        nama_user: metodeInput + " (" + tipeAbsen + ")"
+      };
+
+      var saveResult = simpanAbsensiSiswa(saveReq);
+      if (saveResult.ok) {
+        var pesanSiswa = "Ahlan wa sahlan " + personNama + "! Absensi " + tipeAbsen + " (" + personDetail + ") berhasil dicatat pukul " + jamSekarang;
+        return {
+          ok: true,
+          entity: "Siswa",
+          id: personId,
+          nama: personNama,
+          detail: personDetail,
+          kelas: personDetail,
+          jam: jamSekarang,
+          tipe_absen: tipeAbsen,
+          msg: pesanSiswa,
+          sambutan: "Ahlan wa sahlan " + personNama
+        };
+      } else {
+        return { ok: false, msg: "Gagal mencatat absensi siswa: " + saveResult.message };
+      }
     }
 
   } catch(err) {
-    return { ok: false, msg: "Scan gagal: " + err.toString() };
+    return { ok: false, msg: "Proses absensi gagal: " + err.toString() };
   }
 }
 
@@ -1099,6 +1346,95 @@ function formatTanggalYYYYMMDD(val) {
     }
   }
   return str;
+}
+
+// =========================================================================
+// 17. PENGATURAN WHITE-LABEL & JAM KEDATANGAN / KEPULANGAN
+// =========================================================================
+
+/**
+ * Mencari atau membuat Sheet Pengaturan untuk menyimpan konfigurasi sekolah
+ */
+function getOrCreatePengaturanSheet_() {
+  var ss = SS_();
+  var sheetNames = ["Pengaturan", "Setting", "Settings", "Konfigurasi"];
+  for (var i = 0; i < sheetNames.length; i++) {
+    var sh = ss.getSheetByName(sheetNames[i]);
+    if (sh) return sh;
+  }
+  var newSh = ss.insertSheet("Pengaturan");
+  newSh.appendRow(["Kunci", "Nilai"]);
+  newSh.appendRow(["nama_sekolah", "E-Absensi Sekolah"]);
+  newSh.appendRow(["logo_sekolah", "binailmu.png"]);
+  newSh.appendRow(["jam_masuk", "07:00"]);
+  newSh.appendRow(["jam_pulang", "14:00"]);
+  return newSh;
+}
+
+function getPengaturan() {
+  try {
+    var sh = getOrCreatePengaturanSheet_();
+    var d = sh.getDataRange().getValues();
+    var settings = {
+      nama_sekolah: "E-Absensi Sekolah",
+      logo_sekolah: "binailmu.png",
+      jam_masuk: "07:00",
+      jam_pulang: "14:00"
+    };
+
+    if (d.length > 1) {
+      for (var i = 1; i < d.length; i++) {
+        var key = d[i][0] ? d[i][0].toString().trim().toLowerCase() : "";
+        var val = d[i][1] !== undefined ? d[i][1].toString().trim() : "";
+        if (key) {
+          settings[key] = val;
+        }
+      }
+    }
+
+    return {
+      ok: true,
+      data: settings,
+      settings: settings
+    };
+  } catch(err) {
+    return { ok: false, message: "Gagal mengambil pengaturan: " + err.toString() };
+  }
+}
+
+function simpanPengaturan(requestData) {
+  try {
+    var sh = getOrCreatePengaturanSheet_();
+    var d = sh.getDataRange().getValues();
+
+    var mapKunci = {};
+    for (var i = 1; i < d.length; i++) {
+      var k = d[i][0] ? d[i][0].toString().trim().toLowerCase() : "";
+      if (k) {
+        mapKunci[k] = i + 1; // baris ke- (1-based)
+      }
+    }
+
+    var keysToUpdate = ["nama_sekolah", "logo_sekolah", "jam_masuk", "jam_pulang"];
+    for (var k = 0; k < keysToUpdate.length; k++) {
+      var keyName = keysToUpdate[k];
+      if (requestData[keyName] !== undefined) {
+        var val = requestData[keyName].toString().trim();
+        if (mapKunci[keyName]) {
+          sh.getRange(mapKunci[keyName], 2).setValue(val);
+        } else {
+          sh.appendRow([keyName, val]);
+        }
+      }
+    }
+
+    return {
+      ok: true,
+      message: "Pengaturan nama sekolah, logo, dan jam absensi berhasil disimpan!"
+    };
+  } catch(err) {
+    return { ok: false, message: "Gagal menyimpan pengaturan: " + err.toString() };
+  }
 }
 
 // =========================================================================

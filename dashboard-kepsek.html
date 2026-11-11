@@ -137,11 +137,17 @@
     
     <!-- Header Terisi Otomatis Menggunakan localStorage -->
     <div class="header">
-      <div>
-        <h1>Dashboard Kepala Sekolah</h1>
-        <p>Ahlan wa sahlan <strong id="namaUser">...</strong></p> 
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <img id="headerLogoSekolah" src="binailmu.png" alt="Logo Sekolah" style="width: 54px; height: 54px; border-radius: 50%; background: white; object-fit: contain; padding: 3px; border: 2px solid var(--accent);" onerror="this.src='binailmu.png'">
+        <div>
+          <h1 id="headerNamaSekolah">Dashboard Kepala Sekolah</h1>
+          <p>Ahlan wa sahlan <strong id="namaUser">...</strong></p>
+        </div>
       </div>
-      <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button onclick="bukaModalPengaturan()" style="background: white; color: var(--primary); border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer; display: flex; align-items: center; gap: 6px;">⚙️ Pengaturan Sekolah</button>
+        <button onclick="logout()" style="background: var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Keluar</button>
+      </div>
     </div>
 
     <!-- Alert Banner KBM -->
@@ -224,11 +230,62 @@
 
     <!-- Panel Menu Rekapan Menuju Halaman GitHub Pages Anda (Tab yang Sama) -->
     <div class="action-panel" style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+      <button onclick="bukaModalPengaturan()" class="btn-nav" style="background: #334155; color: #fff;">⚙️ Pengaturan White-Label</button>
       <a href="dashboard-user.html" class="btn-nav" style="background: #0f5132; color: #fff;">👤 Manajemen User</a>
       <a href="dashboard-editkbm.html" class="btn-nav" style="background: var(--accent);">📅 Edit KBM & Kalender</a>
       <a href="https://binailmublora.github.io/absensi/dashboard-export.html" target="_top" class="btn-nav">📊 Buka Menu Rekapan & Export</a>
     </div>
 
+  </div>
+
+  <!-- Modal Pengaturan Sekolah (White-label & Jam Kedatangan/Kepulangan) -->
+  <div id="modalPengaturan" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px;">
+    <div style="background: white; width: 100%; max-width: 520px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #edf2f0; padding-bottom: 12px;">
+        <h3 style="color: var(--primary); font-size: 18px; margin: 0;">⚙️ Pengaturan Identitas & Jam Absensi</h3>
+        <button onclick="tutupModalPengaturan()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+      </div>
+
+      <form id="formPengaturan" onsubmit="handleSimpanPengaturan(event)">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Nama Sekolah / Institusi (White-label) *</label>
+          <input type="text" id="cfgNamaSekolah" placeholder="Contoh: SMA Bina Ilmu Blora" required style="width: 100%; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Logo Sekolah (URL atau Unggah Berkas Gambar)</label>
+          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
+            <img id="previewLogoSekolah" src="binailmu.png" alt="Preview Logo" style="width: 50px; height: 50px; border-radius: 50%; object-fit: contain; border: 2px solid var(--accent); background: #fafafa;" onerror="this.src='binailmu.png'">
+            <div style="flex: 1;">
+              <input type="text" id="cfgLogoSekolahUrl" placeholder="URL Logo: https://... atau biarkan file" style="width: 100%; box-sizing: border-box; font-size: 13px;" oninput="updateLogoPreviewFromInput()">
+            </div>
+          </div>
+          <label style="display: inline-block; background: #e2e8f0; color: #1e293b; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">
+            📁 Unggah Logo Lokal
+            <input type="file" id="fileLogoInput" accept="image/*" style="display: none;" onchange="handleLogoUpload(event)">
+          </label>
+          <input type="hidden" id="cfgLogoBase64">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div>
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Jam Masuk / Kedatangan *</label>
+            <input type="time" id="cfgJamMasuk" required style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 8px; border: 1px solid #dcdfdc; font-size: 14px;">
+            <small style="color: #64748b; font-size: 11px;">Batas waktu kedatangan</small>
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px;">Jam Pulang / Kepulangan *</label>
+            <input type="time" id="cfgJamPulang" required style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 8px; border: 1px solid #dcdfdc; font-size: 14px;">
+            <small style="color: #64748b; font-size: 11px;">Waktu mulai absensi pulang</small>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #edf2f0; padding-top: 16px;">
+          <button type="button" onclick="tutupModalPengaturan()" style="background: #e2e8f0; color: #1e293b;">Batal</button>
+          <button type="submit" id="btnSimpanPengaturan" class="btn-save">💾 Simpan Pengaturan</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -439,8 +496,163 @@
       window.location.href = 'index.html';
     }
 
+    // ==========================================
+    // LOGIKA PENGATURAN WHITE-LABEL & JAM ABSENSI
+    // ==========================================
+    function muatPengaturanSekolah() {
+      // Ambil dari localStorage terlebih dahulu untuk rendering instan
+      const savedName = localStorage.getItem('app_school_name');
+      const savedLogo = localStorage.getItem('app_school_logo');
+      const savedJamMasuk = localStorage.getItem('app_jam_masuk') || '07:00';
+      const savedJamPulang = localStorage.getItem('app_jam_pulang') || '14:00';
+
+      if (savedName) {
+        document.getElementById('headerNamaSekolah').textContent = savedName;
+        document.title = savedName + ' - Dashboard Kepala Sekolah';
+      }
+      if (savedLogo) {
+        document.getElementById('headerLogoSekolah').src = savedLogo;
+      }
+
+      // Ambil dari server backend jika tersedia
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getPengaturan' })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res && res.ok && res.data) {
+          const cfg = res.data;
+          if (cfg.nama_sekolah) {
+            localStorage.setItem('app_school_name', cfg.nama_sekolah);
+            document.getElementById('headerNamaSekolah').textContent = cfg.nama_sekolah;
+            document.title = cfg.nama_sekolah + ' - Dashboard Kepala Sekolah';
+          }
+          if (cfg.logo_sekolah) {
+            localStorage.setItem('app_school_logo', cfg.logo_sekolah);
+            document.getElementById('headerLogoSekolah').src = cfg.logo_sekolah;
+          }
+          if (cfg.jam_masuk) localStorage.setItem('app_jam_masuk', cfg.jam_masuk);
+          if (cfg.jam_pulang) localStorage.setItem('app_jam_pulang', cfg.jam_pulang);
+        }
+      })
+      .catch(e => console.log('Pengaturan lokal digunakan.'));
+    }
+
+    function bukaModalPengaturan() {
+      document.getElementById('cfgNamaSekolah').value = localStorage.getItem('app_school_name') || 'E-Absensi Sekolah';
+      const logo = localStorage.getItem('app_school_logo') || 'binailmu.png';
+      document.getElementById('previewLogoSekolah').src = logo;
+      document.getElementById('cfgLogoSekolahUrl').value = logo.startsWith('data:') ? '' : logo;
+      document.getElementById('cfgLogoBase64').value = logo.startsWith('data:') ? logo : '';
+      document.getElementById('cfgJamMasuk').value = localStorage.getItem('app_jam_masuk') || '07:00';
+      document.getElementById('cfgJamPulang').value = localStorage.getItem('app_jam_pulang') || '14:00';
+
+      document.getElementById('modalPengaturan').style.display = 'flex';
+    }
+
+    function tutupModalPengaturan() {
+      document.getElementById('modalPengaturan').style.display = 'none';
+    }
+
+    function updateLogoPreviewFromInput() {
+      const url = document.getElementById('cfgLogoSekolahUrl').value.trim();
+      if (url) {
+        document.getElementById('previewLogoSekolah').src = url;
+        document.getElementById('cfgLogoBase64').value = '';
+      }
+    }
+
+    function handleLogoUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        // Kompres sederhana gambar logo
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let w = img.width;
+          let h = img.height;
+          const maxDim = 160;
+          if (w > h && w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else if (h > maxDim) {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/png', 0.85);
+
+          document.getElementById('previewLogoSekolah').src = compressed;
+          document.getElementById('cfgLogoBase64').value = compressed;
+          document.getElementById('cfgLogoSekolahUrl').value = '';
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleSimpanPengaturan(e) {
+      e.preventDefault();
+      const nama = document.getElementById('cfgNamaSekolah').value.trim();
+      const logoUrl = document.getElementById('cfgLogoSekolahUrl').value.trim();
+      const logoBase64 = document.getElementById('cfgLogoBase64').value.trim();
+      const jamMasuk = document.getElementById('cfgJamMasuk').value.trim();
+      const jamPulang = document.getElementById('cfgJamPulang').value.trim();
+
+      const logoFinal = logoBase64 || logoUrl || localStorage.getItem('app_school_logo') || 'binailmu.png';
+
+      // Simpan langsung di localStorage untuk akses seketika
+      localStorage.setItem('app_school_name', nama);
+      localStorage.setItem('app_school_logo', logoFinal);
+      localStorage.setItem('app_jam_masuk', jamMasuk);
+      localStorage.setItem('app_jam_pulang', jamPulang);
+
+      // Terapkan ke UI langsung
+      document.getElementById('headerNamaSekolah').textContent = nama;
+      document.getElementById('headerLogoSekolah').src = logoFinal;
+
+      const btn = document.getElementById('btnSimpanPengaturan');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan ke Cloud...';
+
+      fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'simpanPengaturan',
+          nama_sekolah: nama,
+          logo_sekolah: logoFinal,
+          jam_masuk: jamMasuk,
+          jam_pulang: jamPulang,
+          token: localStorage.getItem('auth_token')
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        btn.disabled = false;
+        btn.textContent = '💾 Simpan Pengaturan';
+        tutupModalPengaturan();
+        alert('✓ Pengaturan White-label dan Jam Absensi berhasil disimpan!');
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.textContent = '💾 Simpan Pengaturan';
+        tutupModalPengaturan();
+        alert('Pengaturan disimpan secara lokal di browser!');
+      });
+    }
+
     // Eksekusi fungsi penarikan data ketika window selesai dimuat
     window.onload = function() {
+      muatPengaturanSekolah();
       setHariIni();
       ambilDataKepsek();
     };

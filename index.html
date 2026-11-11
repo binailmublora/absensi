@@ -215,43 +215,51 @@
 </head>
 <body>
 
-  <!-- Header Sekolah -->
+  <!-- Header Sekolah (White-label) -->
   <div class="header-app">
     <div class="logo-container">
-      <img src="binailmu.png" alt="Logo Sekolah" onerror="this.src='https://via.placeholder.com/70/0f5132/ffffff?text=LOGO'">
+      <img id="appSchoolLogo" src="binailmu.png" alt="Logo Sekolah" onerror="this.src='binailmu.png'">
     </div>
-    <h1>E-Absensi & Portal Digital</h1>
-    <p>Silakan scan QR Code Anda atau masuk ke portal akademis</p>
+    <h1 id="appSchoolTitle">E-Absensi & Portal Digital</h1>
+    <p>Silakan scan wajah, scan kartu QR Code, atau masuk ke portal</p>
   </div>
 
   <!-- Wrapper Utama -->
   <div class="main-wrapper">
-    <!-- Menu Pindah Tab -->
-    <div class="tab-navigation">
-      <button class="tab-btn active" onclick="switchTab('scan-tab')">📷 Scan QR</button>
-      <button class="tab-btn" onclick="switchTab('face-tab')">👤 Face Login</button>
-      <button class="tab-btn" onclick="switchTab('login-tab')">🔑 PIN Login</button>
-    </div>
-
-    <!-- TAB 1: AREA LANGSUNG SCAN -->
-    <div id="scan-tab" class="tab-content active">
-      <div id="reader"></div>
-      <div id="status-scanner"></div>
-
-      <!-- Riwayat Scan Singkat Sesi Ini -->
-      <div class="history-section">
-        <div class="history-title">Aktivitas Scan Terbaru</div>
-        <div id="history-list">
-          <p style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px;">Belum ada antrean absensi.</p>
-        </div>
+    <!-- Pilihan Mode Kedatangan / Kepulangan Terpusat -->
+    <div style="padding: 12px 16px; background: #f0fdf4; border-bottom: 1px solid #dcfce7; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+      <div style="font-size: 12px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 5px;">
+        <span>⏰ Opsi Sesi:</span>
+        <span id="labelJamOperasional" style="font-size: 11px; font-weight: 500; color: #4b5563;">(Masuk 07:00 | Pulang 14:00)</span>
+      </div>
+      <div style="display: flex; gap: 4px; background: #e2e8f0; padding: 3px; border-radius: 8px;">
+        <button type="button" id="btnModeKedatangan" onclick="setModeAbsen('Kedatangan')" style="border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; background: var(--primary); color: white; transition: all 0.2s;">
+          ☀️ Kedatangan
+        </button>
+        <button type="button" id="btnModeKepulangan" onclick="setModeAbsen('Kepulangan')" style="border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; background: transparent; color: #475569; transition: all 0.2s;">
+          🌙 Kepulangan
+        </button>
       </div>
     </div>
 
-    <!-- TAB 2: LOGIN BERBASIS FACE RECOGNITION -->
-    <div id="face-tab" class="tab-content">
+    <!-- Menu Pindah Tab -->
+    <div class="tab-navigation">
+      <button class="tab-btn active" onclick="switchTab('face-tab')">👤 Face Absensi</button>
+      <button class="tab-btn" onclick="switchTab('scan-tab')">📷 Scan QR Kartu</button>
+      <button class="tab-btn" onclick="switchTab('login-tab')">🔑 PIN Login</button>
+    </div>
+
+    <!-- TAB 1: ABSENSI LANGSUNG BERBASIS FACE RECOGNITION -->
+    <div id="face-tab" class="tab-content active">
       <div style="text-align: center; margin-bottom: 12px;">
-        <h3 style="font-size: 16px; color: var(--primary);">Login Pengenalan Wajah</h3>
-        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Posisikan wajah Anda tegak menghadap ke arah kamera.</p>
+        <h3 style="font-size: 16px; color: var(--primary);">Absensi Wajah Langsung</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Posisikan wajah menghadap kamera untuk absensi otomatis.</p>
+      </div>
+
+      <!-- Kotak Sambutan Khusus Ahlan Wa Sahlan -->
+      <div id="bannerSambutanWajah" style="display: none; margin-bottom: 12px; background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 12px 14px; text-align: center; animation: fadeIn 0.3s ease;">
+        <div style="font-size: 18px; font-weight: 800; color: #065f46;">✨ Ahlan wa sahlan! ✨</div>
+        <div id="teksSambutanWajah" style="font-size: 14px; font-weight: 600; color: #047857; margin-top: 4px;">Selamat datang</div>
       </div>
 
       <div style="position: relative; width: 100%; max-width: 340px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #000; border: 2px solid var(--accent);">
@@ -260,13 +268,45 @@
       </div>
 
       <div id="status-face" style="margin-top: 14px; padding: 12px; border-radius: 12px; font-size: 13px; text-align: center; font-weight: 600;" class="status-loading">
-        Mengaktifkan kamera & model Face ID...
+        Mengaktifkan kamera & sensor wajah...
       </div>
 
-      <div style="text-align: center; margin-top: 12px;">
-        <button type="button" onclick="startFaceRecognition()" class="btn-action" style="background: var(--primary); color: white; padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px;">
-          🔄 Pindai Ulang Wajah
+      <div style="display: flex; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+        <button type="button" onclick="startFaceRecognition()" class="btn-action" style="background: var(--primary); color: white; padding: 8px 14px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px;">
+          🔄 Pindai Ulang
         </button>
+        <button type="button" id="btnToggleLoginFace" onclick="toggleModeFaceLogin()" class="btn-action" style="background: #e2e8f0; color: #1e293b; padding: 8px 14px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px;">
+          ⚙️ Beralih: Login Dashboard
+        </button>
+      </div>
+
+      <!-- Riwayat Singkat Absensi Wajah -->
+      <div class="history-section">
+        <div class="history-title">Aktivitas Presensi Wajah Sesi Ini</div>
+        <div id="history-face-list">
+          <p style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px;">Belum ada siswa/guru yang absen lewat wajah.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: AREA LANGSUNG SCAN QR CODE KARTU -->
+    <div id="scan-tab" class="tab-content">
+      <div id="reader"></div>
+
+      <!-- Kotak Sambutan QR Code -->
+      <div id="bannerSambutanQR" style="display: none; margin-top: 12px; background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 12px 14px; text-align: center;">
+        <div style="font-size: 18px; font-weight: 800; color: #065f46;">✨ Ahlan wa sahlan! ✨</div>
+        <div id="teksSambutanQR" style="font-size: 14px; font-weight: 600; color: #047857; margin-top: 4px;">Selamat datang</div>
+      </div>
+
+      <div id="status-scanner"></div>
+
+      <!-- Riwayat Scan Singkat Sesi Ini -->
+      <div class="history-section">
+        <div class="history-title">Aktivitas Scan QR Terbaru</div>
+        <div id="history-list">
+          <p style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 10px;">Belum ada antrean absensi kartu.</p>
+        </div>
       </div>
     </div>
 
@@ -302,12 +342,86 @@
   let html5QrcodeScanner;
   let canScan = true;
 
+  // Konfigurasi Jam Operasional & Mode Absen
+  let modeAbsenAktif = "Kedatangan"; // "Kedatangan" atau "Kepulangan"
+  let faceModePurpose = "absen"; // "absen" (langsung) atau "login" (dashboard)
+
   // State Face Recognition
   let faceApiLoaded = false;
   let faceProfiles = [];
   let faceVideoStream = null;
   let faceDetectInterval = null;
-  let isFaceLoginSuccess = false;
+  let isFaceCooldown = false;
+
+  // Teks sambutan TTS audio (opsional jika didukung browser)
+  function bicaraSambutan(teks) {
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(teks);
+        utter.lang = 'id-ID';
+        utter.rate = 1.0;
+        window.speechSynthesis.speak(utter);
+      } catch(e) {}
+    }
+  }
+
+  // Tentukan mode kedatangan atau kepulangan
+  function setModeAbsen(mode) {
+    modeAbsenAktif = mode;
+    const btnMasuk = document.getElementById('btnModeKedatangan');
+    const btnPulang = document.getElementById('btnModeKepulangan');
+
+    if (mode === 'Kedatangan') {
+      btnMasuk.style.background = 'var(--primary)';
+      btnMasuk.style.color = 'white';
+      btnPulang.style.background = 'transparent';
+      btnPulang.style.color = '#475569';
+    } else {
+      btnPulang.style.background = '#0284c7';
+      btnPulang.style.color = 'white';
+      btnMasuk.style.background = 'transparent';
+      btnMasuk.style.color = '#475569';
+    }
+  }
+
+  // Otomatisasi rekomendasi mode absensi sesuai jam yang diatur Kepala Sekolah
+  function evaluasiJamOperasionalOtomatis() {
+    const jamMasukStr = localStorage.getItem('app_jam_masuk') || '07:00';
+    const jamPulangStr = localStorage.getItem('app_jam_pulang') || '14:00';
+    document.getElementById('labelJamOperasional').textContent = `(Masuk ${jamMasukStr} | Pulang ${jamPulangStr})`;
+
+    const now = new Date();
+    const curMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const pParts = jamPulangStr.split(':').map(Number);
+    const pulangMinutes = (pParts[0] || 14) * 60 + (pParts[1] || 0);
+
+    // Jika waktu saat ini sudah mencapai/melewati jam pulang -> default ke Kepulangan
+    if (curMinutes >= pulangMinutes) {
+      setModeAbsen('Kepulangan');
+    } else {
+      setModeAbsen('Kedatangan');
+    }
+  }
+
+  function toggleModeFaceLogin() {
+    const btn = document.getElementById('btnToggleLoginFace');
+    if (faceModePurpose === 'absen') {
+      faceModePurpose = 'login';
+      btn.textContent = '⚙️ Beralih: Absensi Langsung';
+      btn.style.background = 'var(--accent)';
+      btn.style.color = 'white';
+      document.querySelector('#face-tab h3').textContent = 'Login Pengenalan Wajah';
+    } else {
+      faceModePurpose = 'absen';
+      btn.textContent = '⚙️ Beralih: Login Dashboard';
+      btn.style.background = '#e2e8f0';
+      btn.style.color = '#1e293b';
+      document.querySelector('#face-tab h3').textContent = 'Absensi Wajah Langsung';
+    }
+    startFaceRecognition();
+  }
 
   // Fungsi Pindah Tab Antarmuka
   function switchTab(tabId) {
@@ -353,24 +467,41 @@
 
     fetch(BACKEND_URL, {
       method: "POST",
-      body: JSON.stringify({ action: "scanAbsen", barcodeId: decodedText })
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "scanAbsen",
+        barcodeId: decodedText,
+        tipe_absen: modeAbsenAktif,
+        metode: "Scanner QR Code"
+      })
     })
     .then(response => response.json())
     .then(res => {
       if(res.ok) {
+        // Tampilkan Banner Sambutan Ahlan wa sahlan
+        const banner = document.getElementById("bannerSambutanQR");
+        const teks = document.getElementById("teksSambutanQR");
+        if (banner && teks) {
+          teks.innerHTML = `${res.sambutan || ('Ahlan wa sahlan ' + (res.nama || ''))}! <strong>${res.msg}</strong>`;
+          banner.style.display = "block";
+          setTimeout(() => { banner.style.display = "none"; }, 4000);
+        }
+
+        bicaraSambutan(`Ahlan wa sahlan ${res.nama || ''}, absensi ${modeAbsenAktif} berhasil`);
+
         setScanStatus("✅ " + res.msg, "status-success");
-        pushToHistory(decodedText);
+        pushToHistory(res.nama || decodedText, res.detail || res.entity || modeAbsenAktif);
       } else {
         setScanStatus("❌ " + res.msg, "status-error");
       }
       setTimeout(() => { 
         canScan = true; 
         setScanStatus("", ""); 
-      }, 3000);
+      }, 3500);
     })
     .catch(err => {
       setScanStatus("❌ Koneksi Gagal atau Respons Invalid", "status-error");
-      setTimeout(() => { canScan = true; }, 3000);
+      setTimeout(() => { canScan = true; }, 3500);
     });
   }
 
@@ -383,7 +514,7 @@
     el.style.display = "block";
   }
 
-  function pushToHistory(idText) {
+  function pushToHistory(idText, detailInfo) {
     const list = document.getElementById("history-list");
     if(list.innerHTML.includes("Belum ada antrean")) list.innerHTML = "";
 
@@ -392,7 +523,20 @@
 
     const item = document.createElement("div");
     item.className = "history-item";
-    item.innerHTML = `<span>ID: <strong>${idText}</strong></span> <span class="history-time">${waktu} WIB</span>`;
+    item.innerHTML = `<span><strong>${idText}</strong> <small style="color:#64748b;">(${detailInfo || modeAbsenAktif})</small></span> <span class="history-time">${waktu} WIB</span>`;
+    list.prepend(item);
+  }
+
+  function pushToFaceHistory(nama, info) {
+    const list = document.getElementById("history-face-list");
+    if(list.innerHTML.includes("Belum ada")) list.innerHTML = "";
+
+    const t = new Date();
+    const waktu = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0') + ':' + String(t.getSeconds()).padStart(2,'0');
+
+    const item = document.createElement("div");
+    item.className = "history-item";
+    item.innerHTML = `<span><strong>${nama}</strong> <small style="color:#64748b;">(${info})</small></span> <span class="history-time">${waktu} WIB</span>`;
     list.prepend(item);
   }
 
@@ -488,11 +632,11 @@
   }
 
   async function startFaceRecognition() {
-    isFaceLoginSuccess = false;
+    isFaceCooldown = false;
     const statusEl = document.getElementById("status-face");
     statusEl.className = "status-loading";
     statusEl.style.display = "block";
-    statusEl.innerText = "Mempersiapkan pendeteksian wajah...";
+    statusEl.innerText = "Mempersiapkan sensor pengenalan wajah...";
 
     if (!faceApiLoaded) {
       await initFaceAPI();
@@ -510,7 +654,9 @@
       video.srcObject = faceVideoStream;
 
       video.onloadedmetadata = () => {
-        statusEl.innerText = "Silakan hadap kamera untuk verifikasi wajah...";
+        statusEl.innerText = faceModePurpose === 'login'
+          ? "Silakan hadap kamera untuk verifikasi login..."
+          : `Silakan hadap kamera untuk Absensi ${modeAbsenAktif} langsung...`;
         jalankanPendeteksianWajah();
       };
     } catch(err) {
@@ -542,7 +688,7 @@
     }
 
     faceDetectInterval = setInterval(async () => {
-      if (isFaceLoginSuccess || !video.srcObject) return;
+      if (isFaceCooldown || !video.srcObject) return;
 
       try {
         const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
@@ -552,41 +698,99 @@
         if (detection) {
           if (!faceMatcher) {
             statusEl.className = "status-error";
-            statusEl.innerText = "Wajah terdeteksi, namun belum ada profil wajah terdaftar di sistem. Hubungi Kepala Sekolah / Administrator.";
+            statusEl.innerText = "Wajah terdeteksi, namun belum ada profil wajah terdaftar di sistem. Daftarkan di Manajemen User.";
             return;
           }
 
           const match = faceMatcher.findBestMatch(detection.descriptor);
           if (match.label !== 'unknown') {
             const userData = JSON.parse(match.label);
-            isFaceLoginSuccess = true;
-            clearInterval(faceDetectInterval);
-            stopFaceCamera();
+            isFaceCooldown = true; // Kunci sementara agar tidak double-scan
 
-            statusEl.className = "status-success";
-            statusEl.innerHTML = `✅ Wajah Dikenali: <strong>${userData.nama}</strong> (${userData.role})<br>Mengalihkan ke dashboard...`;
+            // 1. JIKA MODE LOGIN PORTAL
+            if (faceModePurpose === 'login') {
+              stopFaceCamera();
+              statusEl.className = "status-success";
+              statusEl.innerHTML = `✅ Wajah Dikenali: <strong>${userData.nama}</strong> (${userData.role})<br>Mengalihkan ke dashboard...`;
 
-            // Simpan sesi login
-            localStorage.setItem('auth_token', 'FACE_' + Date.now());
-            localStorage.setItem('user_nama', userData.nama);
-            localStorage.setItem('user_role', userData.role);
-            localStorage.setItem('id_terkait', userData.id);
+              localStorage.setItem('auth_token', 'FACE_' + Date.now());
+              localStorage.setItem('user_nama', userData.nama);
+              localStorage.setItem('user_role', userData.role);
+              localStorage.setItem('id_terkait', userData.id);
 
-            setTimeout(() => {
-              redirectByRole(userData.role);
-            }, 1200);
+              setTimeout(() => {
+                redirectByRole(userData.role);
+              }, 1200);
+              return;
+            }
+
+            // 2. JIKA MODE ABSENSI HARIAN LANGSUNG SEPERTI HALNYA QR CODE
+            statusEl.className = "status-loading";
+            statusEl.innerHTML = `Mencatat Absensi ${modeAbsenAktif} untuk <strong>${userData.nama}</strong>...`;
+
+            fetch(BACKEND_URL, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify({
+                action: "scanAbsen",
+                barcodeId: userData.id,
+                from_face: true,
+                metode: "Face Recognition",
+                tipe_absen: modeAbsenAktif
+              })
+            })
+            .then(res => res.json())
+            .then(res => {
+              // Tampilkan Banner Sambutan Ahlan wa sahlan
+              const banner = document.getElementById("bannerSambutanWajah");
+              const teks = document.getElementById("teksSambutanWajah");
+              if (banner && teks) {
+                teks.innerHTML = `${res.sambutan || ('Ahlan wa sahlan ' + userData.nama)}!<br><strong>${res.msg || ('Absensi ' + modeAbsenAktif + ' Berhasil')}</strong>`;
+                banner.style.display = "block";
+              }
+
+              // Audio ucapan sambutan
+              bicaraSambutan(`Ahlan wa sahlan ${userData.nama}, absensi ${modeAbsenAktif} berhasil`);
+
+              if (res.ok) {
+                statusEl.className = "status-success";
+                statusEl.innerHTML = `✅ <strong>${userData.nama}</strong> (${userData.role}) - Absensi ${modeAbsenAktif} Berhasil Dicatat!`;
+                pushToFaceHistory(userData.nama, `${modeAbsenAktif} • ${userData.role}`);
+              } else {
+                statusEl.className = "status-error";
+                statusEl.innerHTML = `⚠️ ${res.msg || 'Gagal menyimpan absensi'}`;
+              }
+
+              // Cooldown 3.5 detik lalu buka kembali scanner untuk orang selanjutnya
+              setTimeout(() => {
+                if (banner) banner.style.display = "none";
+                isFaceCooldown = false;
+                statusEl.className = "status-loading";
+                statusEl.innerText = `Silakan hadap kamera untuk Absensi ${modeAbsenAktif} langsung...`;
+              }, 3500);
+            })
+            .catch(err => {
+              statusEl.className = "status-error";
+              statusEl.innerText = "Kendala koneksi: " + err.message;
+              setTimeout(() => {
+                isFaceCooldown = false;
+                statusEl.className = "status-loading";
+                statusEl.innerText = "Mencoba kembali...";
+              }, 3500);
+            });
+
           } else {
             statusEl.className = "status-loading";
-            statusEl.innerText = "Wajah tidak cocok dengan pengguna terdaftar. Menyesuaikan posisi...";
+            statusEl.innerText = "Wajah tidak cocok dengan profil terdaftar. Silakan hadap lurus ke kamera...";
           }
         } else {
           statusEl.className = "status-loading";
-          statusEl.innerText = "Mencari wajah... Harap posisikan wajah ke tengah kamera.";
+          statusEl.innerText = `Mencari wajah... Posisikan wajah ke kamera untuk Absensi ${modeAbsenAktif}.`;
         }
       } catch(e) {
         console.warn("Deteksi error:", e);
       }
-    }, 500);
+    }, 450);
   }
 
   function stopFaceCamera() {
@@ -602,10 +806,25 @@
     if (video) video.srcObject = null;
   }
 
+  // Muat identitas sekolah (white-label)
+  function muatBrandingSekolah() {
+    const savedName = localStorage.getItem('app_school_name');
+    const savedLogo = localStorage.getItem('app_school_logo');
+    if (savedName) {
+      document.getElementById('appSchoolTitle').textContent = savedName;
+      document.title = savedName + ' - Absensi Digital';
+    }
+    if (savedLogo) {
+      document.getElementById('appSchoolLogo').src = savedLogo;
+    }
+  }
+
   window.onload = function() {
-    startCamera();
+    muatBrandingSekolah();
+    evaluasiJamOperasionalOtomatis();
     initFaceAPI();
     loadFaceProfiles();
+    startFaceRecognition();
   };
 </script>
 </body>

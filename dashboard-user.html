@@ -359,9 +359,12 @@
 <div class="container">
   <!-- Header Kepala Sekolah / Admin -->
   <div class="header">
-    <div>
-      <h1>Portal Manajemen Pengguna & Face ID</h1>
-      <p>Ahlan wa sahlan <strong id="namaUser">...</strong> | Konfigurasi Pengguna & Pendaftaran Wajah</p>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <img id="headerLogoSekolah" src="binailmu.png" alt="Logo Sekolah" style="width: 54px; height: 54px; border-radius: 50%; background: white; object-fit: contain; padding: 3px; border: 2px solid var(--accent);" onerror="this.src='binailmu.png'">
+      <div>
+        <h1 id="headerNamaSekolah">Portal Manajemen Pengguna & Face ID</h1>
+        <p>Ahlan wa sahlan <strong id="namaUser">...</strong> | Konfigurasi Pengguna & Pendaftaran Wajah</p>
+      </div>
     </div>
     <div class="header-actions">
       <a href="dashboard-kepsek.html" class="btn-header">Kembali ke Dashboard</a>
@@ -1069,7 +1072,20 @@
     window.location.href = 'index.html';
   }
 
+  function muatBrandingSekolah() {
+    const savedName = localStorage.getItem('app_school_name');
+    const savedLogo = localStorage.getItem('app_school_logo');
+    if (savedName) {
+      document.getElementById('headerNamaSekolah').textContent = savedName + ' - User & Face ID';
+      document.title = savedName + ' - Manajemen Pengguna & Face ID';
+    }
+    if (savedLogo) {
+      document.getElementById('headerLogoSekolah').src = savedLogo;
+    }
+  }
+
   window.onload = function() {
+    muatBrandingSekolah();
     initFaceAPI();
     loadUserData();
   };
