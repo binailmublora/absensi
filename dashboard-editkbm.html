@@ -111,9 +111,12 @@
     
     <!-- Topbar Header -->
     <div class="header">
-      <div>
-        <h1>Edit KBM & Kalender Akademik</h1>
-        <p>Manajemen Kalender Sekolah</p> 
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <img id="headerLogoSekolah" src="binailmu.png" alt="Logo Sekolah" style="width: 54px; height: 54px; border-radius: 50%; background: white; object-fit: contain; padding: 3px; border: 2px solid var(--accent);" onerror="this.src='binailmu.png'">
+        <div>
+          <h1 id="headerNamaSekolah">Edit KBM & Kalender Akademik</h1>
+          <p>Manajemen Kalender Sekolah</p>
+        </div>
       </div>
       <a href="dashboard-kepsek.html" style="background: var(--accent); color:white; text-decoration:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Kembali</a>
     </div>
@@ -313,7 +316,20 @@
       });
     }
 
+    function muatBrandingSekolah() {
+      const savedName = localStorage.getItem('app_school_name');
+      const savedLogo = localStorage.getItem('app_school_logo');
+      if (savedName) {
+        document.getElementById('headerNamaSekolah').textContent = savedName + ' - Kalender KBM';
+        document.title = savedName + ' - Edit KBM & Kalender';
+      }
+      if (savedLogo) {
+        document.getElementById('headerLogoSekolah').src = savedLogo;
+      }
+    }
+
     window.onload = function() {
+      muatBrandingSekolah();
       setHariIni();
       muatKalender();
     };

@@ -39,7 +39,13 @@
   <div class="container">
     <a href="#" class="btn-back" onclick="kembaliKeDashboard()">⬅️ Kembali ke Dashboard Utama</a>
     
-    <h1 style="color: var(--primary); margin-bottom: 20px;">📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)</h1>
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+      <img id="exportLogoSekolah" src="binailmu.png" alt="Logo Sekolah" style="width: 50px; height: 50px; border-radius: 50%; object-fit: contain; border: 2px solid var(--accent); background: white; padding: 2px;" onerror="this.src='binailmu.png'">
+      <div>
+        <h1 id="exportNamaSekolah" style="color: var(--primary); font-size: 22px; margin: 0;">📊 Pusat Rekapan Data & Ekspor (Presisi Tanggal)</h1>
+        <p style="font-size: 13px; color: #64748b; margin-top: 2px;">Laporan Rekapitulasi Presisi & Ekspor Dokumen</p>
+      </div>
+    </div>
 
     <!-- BLOK 1: REKAPAN SISWA -->
     <div class="card" id="aksesSiswa" style="display:none;">
@@ -294,7 +300,20 @@
       XLSX.writeFile(workbook, `Laporan_Harian_${tipe}_${new Date().toISOString().split('T')[0]}.xlsx`);
     }
 
+    function muatBrandingSekolah() {
+      const savedName = localStorage.getItem('app_school_name');
+      const savedLogo = localStorage.getItem('app_school_logo');
+      if (savedName) {
+        document.getElementById('exportNamaSekolah').textContent = savedName + ' - Rekapan & Ekspor';
+        document.title = savedName + ' - Pusat Rekapan & Export';
+      }
+      if (savedLogo) {
+        document.getElementById('exportLogoSekolah').src = savedLogo;
+      }
+    }
+
     window.onload = function() {
+      muatBrandingSekolah();
       setFormatTanggalDefault();
       konfigurasiHakAksesAplikasi();
       memuatDaftarKelasOtomatis();
